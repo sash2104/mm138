@@ -88,57 +88,6 @@ int N, V;
 double B;
 int grid_[30][30];
 
-// up, down, left, right
-static constexpr short UP = 0;
-static constexpr short DOWN = 1;
-static constexpr short LEFT = 2;
-static constexpr short RIGHT = 3;
-int DX[4] = {0, 0, -1, 1};
-int DY[4] = {-1, 1, 0, 0};
-
-
-// TOP, BOTTOM
-static constexpr short TOP = 0;
-static constexpr short BOTTOM = 1;
-
-struct Pos {
-  int x = -1, y = -1;
-  Pos() {}
-  Pos(int x, int y): x(x), y(y) {}
-  bool operator == (const Pos &other) const { 
-    return (other.x == x) && (other.y == y);
-  }
-  bool operator != (const Pos &other) const { 
-    return !((*this) == other);
-  }
-  int distance(const Pos &other) const {
-    return abs(x-other.x)+abs(y-other.y);
-  }
-  Pos to(int dir) const {
-    return Pos(x+DX[dir],y+DY[dir]);
-  }
-
-  friend std::ostream& operator<<(std::ostream& os, const Pos &p) {
-    os << "(" << p.x << "," << p.y << ")";
-    return os;
-  }
-};
-
-int getDir(const Pos &cur, const Pos &nex) {
-  // cur -> nexの方向を返す
-  if (cur.x > nex.x) return LEFT;
-  if (cur.x < nex.x) return RIGHT;
-  if (cur.y > nex.y) return UP;
-  if (cur.y < nex.y) return DOWN;
-  assert(false);
-}
-
-bool outside(const Pos &p) {
-  if (p.x < 0 || p.x >= N) return true;
-  if (p.y < 0 || p.y >= N) return true;
-  return false;
-}
-
 vector<vector<int>> dice_ = {
 {0,1,2,3,4,5},
 {2,3,1,0,4,5},
@@ -192,6 +141,62 @@ vector<vector<int>> trans_ = {
 {20,22,2,14},
 };
 
+
+// up, down, left, right
+static constexpr short UP = 0;
+static constexpr short DOWN = 1;
+static constexpr short LEFT = 2;
+static constexpr short RIGHT = 3;
+int DX[4] = {0, 0, -1, 1};
+int DY[4] = {-1, 1, 0, 0};
+
+
+// TOP, BOTTOM
+static constexpr short TOP = 0;
+static constexpr short BOTTOM = 1;
+
+struct Pos {
+  int x = -1, y = -1, d = -1;
+  Pos() {}
+  Pos(int x, int y): x(x), y(y) {}
+  Pos(int x, int y, int d): x(x), y(y), d(d) {}
+  bool eq(const Pos &other) const {
+    return (other.x == x) && (other.y == y);
+  }
+  bool operator == (const Pos &other) const { 
+    return (other.x == x) && (other.y == y) && (other.d == d);
+  }
+  bool operator != (const Pos &other) const { 
+    return !((*this) == other);
+  }
+  int distance(const Pos &other) const {
+    return abs(x-other.x)+abs(y-other.y);
+  }
+  Pos to(int dir) const {
+    assert(d != -1);
+    return Pos(x+DX[dir],y+DY[dir], trans_[d][dir]);
+  }
+
+  friend std::ostream& operator<<(std::ostream& os, const Pos &p) {
+    os << "(" << p.x << "," << p.y << ")";
+    return os;
+  }
+};
+
+int getDir(const Pos &cur, const Pos &nex) {
+  // cur -> nexの方向を返す
+  if (cur.x > nex.x) return LEFT;
+  if (cur.x < nex.x) return RIGHT;
+  if (cur.y > nex.y) return UP;
+  if (cur.y < nex.y) return DOWN;
+  assert(false);
+}
+
+bool outside(const Pos &p) {
+  if (p.x < 0 || p.x >= N) return true;
+  if (p.y < 0 || p.y >= N) return true;
+  return false;
+}
 // update(), calcScore(), revert(), write()を実装する
 using grid_t = vector<vector<Pos>>;
 
@@ -213,7 +218,7 @@ struct State {
     while (true) {
       ++len;
       Pos nex = grid[cur.y][cur.x];
-      if (nex == start) break;
+      if (nex.eq(start)) break;
       cur = nex;
     }
     return len; 
@@ -224,11 +229,12 @@ struct State {
     Pos cur = start;
     int did = 0;
     while (true) {
+      assert(did == cur.d);
       int d = dice[dice_[did][BOTTOM]];
       int v = grid_[cur.y][cur.x];
       if (abs(v) == d) ret += v;
       Pos nex = grid[cur.y][cur.x];
-      if (nex == start) break;
+      if (nex.eq(start)) break;
       int dir = getDir(cur, nex);
       cur = nex;
       did = trans_[did][dir];
@@ -248,8 +254,8 @@ struct State {
     REP(i,n) {
       cout << cur.y << " " << cur.x << endl;
       Pos nex = grid[cur.y][cur.x];
-      if (i == n-1) assert(nex == start);
-      else assert(nex != start);
+      if (i == n-1) assert(nex.eq(start));
+      else assert(!nex.eq(start));
       cur = nex;
     }
   } // 現在の状態を出力する.
@@ -262,7 +268,7 @@ void initState(State &s) {
     --v;
     if (v <= 0) v = V;
   }
-  s.start = Pos(0,0);
+  s.start = Pos(0,0,0);
   Pos cur = s.start;
   for (int dir: {RIGHT, DOWN, LEFT, UP}) {
     REP(i,N) {
