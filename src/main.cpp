@@ -178,7 +178,7 @@ struct Pos {
   }
 
   friend std::ostream& operator<<(std::ostream& os, const Pos &p) {
-    os << "(" << p.x << "," << p.y << ")";
+    os << "(" << p.x << "," << p.y << "," << p.d << ")";
     return os;
   }
 };
@@ -200,19 +200,105 @@ bool outside(const Pos &p) {
 // update(), calcScore(), revert(), write()を実装する
 using grid_t = vector<vector<Pos>>;
 
+static constexpr int MAX_DEPTH = 15;
+vector<char> dir2c = {'A', 'v', '<', '>'};
+void show(const grid_t &grid) {
+  REP(y,N) {
+    REP(x,N) {
+      Pos cur(x,y);
+      const Pos &nex = grid[y][x];
+      if (nex.x == -1) {
+        cerr << '.';
+        continue;
+      }
+      int dir = getDir(cur, nex);
+      cerr << dir2c[dir];
+    }
+    cerr << '\n';
+  }
+}
+
 struct State {
   vector<int> dice;
   Pos start;
   grid_t grid;
   int score = -INF;
+  // backup
+  vector<Pos> bpos;
   int bscore;
-  State(): dice(6), grid(N,vector<Pos>(N)) {}
+  int blen;
+  Pos bsrc, btarget;
+  int bx, by;
+  State(): dice(6), grid(N,vector<Pos>(N)), bpos(MAX_DEPTH+1) {}
   int update() { 
+    int len = 3;
+    int x = rng.nextInt(N);
+    int y = rng.nextInt(N);
+    while(empty(x, y)) {
+      x = rng.nextInt(N);
+      y = rng.nextInt(N);
+    }
+    bx = x; by = y;
+    Pos cur = grid[y][x];
+    bsrc = cur;
+    Pos target;
+    REP(i,len) {
+      Pos nex = grid[cur.y][cur.x];
+      bpos[i] = nex;
+      target = nex;
+      grid[cur.y][cur.x] = Pos();
+      // cerr << i << cur << nex << endl;
+      if (nex.eq(start)) {
+        len = i+1;
+        break;
+      }
+      cur = nex;
+    }
+    blen = len;
+    bscore = score;
+    btarget = target;
+    // show(grid);
+    // cerr << cur << target << endl;
+    dfs(bsrc, bsrc, target, 0);
+    // show(grid);
+
+
     return 0;
+  }
+
+  bool empty(int x, int y) const {
+    return grid[y][x].x == -1;
   }
 
   bool empty(const Pos &p) const {
     return grid[p.y][p.x].x == -1;
+  }
+
+  bool dfs(const Pos &cur, const Pos &src, const Pos &target, int depth) {
+    if (cur == target) {
+      assert(!empty(cur));
+      // Pos fr = src;
+      // while(true) {
+      //   Pos nex = grid[fr.y][fr.x];
+      //   assert(nex.x != -1);
+      //   cerr << nex;
+      //   if (nex == target) break;
+      //   fr = nex;
+      // }
+      // cerr << endl;
+      return true;
+    }
+    if (!empty(cur)) return false;
+    // targetにたどり着けない場合は枝刈り
+    if (cur.distance(target) > MAX_DEPTH-depth) return false;
+    REP(dir, 4) {
+      Pos nex = cur.to(dir);
+      if (outside(nex)) continue;
+      grid[cur.y][cur.x] = nex;
+      if (dfs(nex, src, target, depth+1)) return true;
+      grid[cur.y][cur.x] = Pos();
+    }
+    return false;
   }
 
   int size() {
@@ -244,6 +330,24 @@ struct State {
   }
 
   void revert() {
+    show(grid);
+    Pos cur = bsrc;
+    while (true) {
+      assert(cur.x != -1);
+      Pos nex = grid[cur.y][cur.x];
+      grid[cur.y][cur.x] = Pos();
+      if (nex.x == -1) break;
+      if (nex == btarget) break;
+      cur = nex;
+    }
+    cur = bsrc;
+    REP(i,blen) {
+      // cerr << i << cur << bpos[i] << endl;
+      assert(cur.x != -1);
+      grid[cur.y][cur.x] = bpos[i];
+      cur = bpos[i];
+    }
+    score = bscore;
   } // update()適用前の状態に戻す.
 
   void write() {
@@ -340,6 +444,19 @@ struct Solver {
     void solve() {
         State state; // 開始状態
         initState(state);
+
+        REP(i,100) {
+          state.update();
+        }
+        // state.revert();
+
+        // Pos start = state.grid[0][1];
+        // cerr << start << state.grid[0][4] << endl;
+        // Pos bkup = state.grid[start.y][start.x];
+        // state.grid[start.y][start.x] = Pos();
+        // state.dfs(start, start, state.grid[0][4], 0);
+        // state.grid[start.y][start.x] = bkup;
+
         state.write();
         cerr << "score=" << state.calcScore() << endl;
         // SASolver s;
