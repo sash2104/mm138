@@ -149,6 +149,32 @@ static constexpr short LEFT = 2;
 static constexpr short RIGHT = 3;
 int DX[4] = {0, 0, -1, 1};
 int DY[4] = {-1, 1, 0, 0};
+vector<vector<int>> orders_ = {
+  {0,1,2,3},
+  {0,1,3,2},
+  {0,2,1,3},
+  {0,2,3,1},
+  {0,3,1,2},
+  {0,3,2,1},
+  {1,2,3,0},
+  {1,3,2,0},
+  {2,1,3,0},
+  {2,3,1,0},
+  {3,1,2,0},
+  {3,2,1,0},
+  {2,3,0,1},
+  {3,2,0,1},
+  {1,3,0,2},
+  {3,1,0,2},
+  {1,2,0,3},
+  {2,1,0,3},
+  {3,0,1,2},
+  {2,0,1,3},
+  {3,0,2,1},
+  {1,0,2,3},
+  {2,0,3,1},
+  {1,0,3,2},
+};
 
 
 // TOP, BOTTOM
@@ -220,7 +246,7 @@ void show(const grid_t &grid) {
 
 struct State {
   vector<int> dice;
-  Pos start;
+  Pos start, goal;
   grid_t grid;
   int score = -INF;
   // backup
@@ -231,7 +257,7 @@ struct State {
   int bx, by;
   State(): dice(6), grid(N,vector<Pos>(N)), bpos(MAX_DEPTH+1) {}
   int update() { 
-    int len = 3;
+    int len = rng.nextInt(3,MAX_DEPTH-2);
     int x = rng.nextInt(N);
     int y = rng.nextInt(N);
     while(empty(x, y)) {
@@ -248,7 +274,7 @@ struct State {
       target = nex;
       grid[cur.y][cur.x] = Pos();
       // cerr << i << cur << nex << endl;
-      if (nex.eq(start)) {
+      if (nex.eq(goal)) {
         len = i+1;
         break;
       }
@@ -258,15 +284,15 @@ struct State {
     bscore = score;
     btarget = target;
     // show(grid);
-    // cerr << cur << target << endl;
+    // cerr << bsrc << target << endl;
     if (!dfs(bsrc, bsrc, target, 0)) {
-      revert();
       return -INF;
     }
     // show(grid);
+    score = calcScore();
 
 
-    return 0;
+    return score-bscore;
   }
 
   bool empty(int x, int y) const {
@@ -294,7 +320,8 @@ struct State {
     if (!empty(cur)) return false;
     // targetにたどり着けない場合は枝刈り
     if (cur.distance(target) > MAX_DEPTH-depth) return false;
-    REP(dir, 4) {
+    vector<int> &order = orders_[rng.nextInt(orders_.size())];
+    for (int dir: order) {
       Pos nex = cur.to(dir);
       if (outside(nex)) continue;
       grid[cur.y][cur.x] = nex;
@@ -323,6 +350,7 @@ struct State {
     while (true) {
       int d = dice[dice_[cur.d][BOTTOM]];
       int v = grid_[cur.y][cur.x];
+      // cerr << cur << d << " " << v << endl;
       if (abs(v) == d) ret += v;
       Pos nex = grid[cur.y][cur.x];
       if (nex.eq(start)) break;
@@ -373,9 +401,10 @@ struct State {
 void initState(State &s) {
   int v = V;
   REP(i,6) {
-    s.dice[i] = v;
-    --v;
-    if (v <= 0) v = V;
+    // s.dice[i] = v;
+    // --v;
+    // if (v <= 0) v = V;
+    s.dice[i] = V-i%2;
   }
   s.start = Pos(0,0,0);
   Pos cur = s.start;
@@ -384,6 +413,7 @@ void initState(State &s) {
       Pos nex = cur.to(dir);
       if (outside(nex)) break;
       s.grid[cur.y][cur.x] = nex;
+      s.goal = cur;
       if (!s.empty(nex)) break;
       cur = nex;
     }
@@ -403,15 +433,21 @@ struct SASolver {
 
   void solve(State &state) {
     double t;
-    int score = state.calcScore();
+    state.score = state.calcScore();
+    int score = state.score;
     best = state;
     int bestScore = score;
     int counter = 0;
+    return;
     while ((t = timer.get()) < timer.LIMIT) // 焼きなまし終了時刻までループ
     {
       double T = startTemp + (endTemp - startTemp) * t / timer.LIMIT;
       for (int i = 0; i < 100; ++i) { // 時間計算を間引く
         int diff = state.update();
+        if (diff == -INF) {
+          state.revert();
+          continue;
+        }
 
         // 最初t=0のときは、スコアが良くなろうが悪くなろうが、常に次状態を使用
         // 最後t=timer.LIMITのときは、スコアが改善したときのみ、次状態を使用
@@ -424,8 +460,7 @@ struct SASolver {
           if (bestScore < score) {
             bestScore = score;
             best = state;
-            // cerr << "time = " << t << ", counter = " << counter << ", score = " << bestScore << endl;
-            // cerr << "time = " << t << ", counter = " << counter << ", score = " << bestScore << " " << best.calcScore(true) << endl;
+            cerr << "time = " << t << ", counter = " << counter << ", score = " << bestScore << endl;
             // best.write();
           }
         }
@@ -449,9 +484,9 @@ struct Solver {
         State state; // 開始状態
         initState(state);
 
-        REP(i,100) {
-        int diff = state.update();
-        }
+        // REP(i,100) {
+        // int diff = state.update();
+        // }
         // if (diff != -INF) state.revert();
 
         // Pos start = state.grid[0][1];
@@ -461,14 +496,15 @@ struct Solver {
         // state.dfs(start, start, state.grid[0][4], 0);
         // state.grid[start.y][start.x] = bkup;
 
-        state.write();
-        cerr << "score=" << state.calcScore() << endl;
-        // SASolver s;
-        // s.solve(state);
-        // s.best.write();
-    }
-    void show() { 
-        cerr << "[turn]" << turn_ << endl;
+        // state.write();
+        SASolver s;
+        s.solve(state);
+        REP(i,100) {
+          s.best.update();
+        }
+        s.best.write();
+        show(s.best.grid);
+        cerr << "score=" << s.best.calcScore() << endl;
     }
 
     void readInput() { // loopから抜け出す時にtrue
