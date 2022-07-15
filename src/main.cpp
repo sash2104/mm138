@@ -96,6 +96,11 @@ static constexpr short RIGHT = 3;
 int DX[4] = {0, 0, -1, 1};
 int DY[4] = {-1, 1, 0, 0};
 
+
+// TOP, BOTTOM
+static constexpr short TOP = 0;
+static constexpr short BOTTOM = 1;
+
 struct Pos {
   int x = -1, y = -1;
   Pos() {}
@@ -119,6 +124,15 @@ struct Pos {
   }
 };
 
+int getDir(const Pos &cur, const Pos &nex) {
+  // cur -> nexの方向を返す
+  if (cur.x > nex.x) return LEFT;
+  if (cur.x < nex.x) return RIGHT;
+  if (cur.y > nex.y) return UP;
+  if (cur.y < nex.y) return DOWN;
+  assert(false);
+}
+
 bool outside(const Pos &p) {
   if (p.x < 0 || p.x >= N) return true;
   if (p.y < 0 || p.y >= N) return true;
@@ -127,29 +141,29 @@ bool outside(const Pos &p) {
 
 vector<vector<int>> dice_ = {
 {0,1,2,3,4,5},
-{3,0,2,5,4,1},
-{5,3,2,1,4,0},
-{1,5,2,0,4,3},
+{2,3,1,0,4,5},
+{1,0,3,2,4,5},
+{3,2,0,1,4,5},
+{5,4,0,1,3,2},
+{0,1,4,5,3,2},
 {4,5,1,0,3,2},
-{0,4,1,2,3,5},
-{2,0,1,5,3,4},
-{5,2,1,4,3,0},
-{3,2,5,4,0,1},
-{4,3,5,1,0,2},
-{1,4,5,2,0,3},
-{2,1,5,3,0,4},
-{5,1,4,3,2,0},
-{3,5,4,0,2,1},
-{0,3,4,1,2,5},
-{1,0,4,5,2,3},
-{4,0,3,5,1,2},
+{1,0,5,4,3,2},
+{2,3,5,4,1,0},
 {5,4,3,2,1,0},
-{2,5,3,0,1,4},
-{0,2,3,4,1,5},
-{1,2,0,4,5,3},
-{4,1,0,3,5,2},
-{3,4,0,2,5,1},
+{3,2,4,5,1,0},
+{4,5,2,3,1,0},
+{1,0,2,3,5,4},
 {2,3,0,1,5,4},
+{0,1,3,2,5,4},
+{3,2,1,0,5,4},
+{5,4,1,0,2,3},
+{1,0,4,5,2,3},
+{4,5,0,1,2,3},
+{0,1,5,4,2,3},
+{3,2,5,4,0,1},
+{5,4,2,3,0,1},
+{2,3,4,5,0,1},
+{4,5,3,2,0,1},
 };
 vector<vector<int>> trans_ = {
 {1,3,21,11},
@@ -206,8 +220,22 @@ struct State {
   }
 
   int calcScore() { 
-    return 0;
+    int ret = 0;
+    Pos cur = start;
+    int did = 0;
+    while (true) {
+      int d = dice[dice_[did][BOTTOM]];
+      int v = grid_[cur.y][cur.x];
+      if (abs(v) == d) ret += v;
+      Pos nex = grid[cur.y][cur.x];
+      if (nex == start) break;
+      int dir = getDir(cur, nex);
+      cur = nex;
+      did = trans_[did][dir];
+    }
+    return ret;
   }
+
   void revert() {
   } // update()適用前の状態に戻す.
 
@@ -306,6 +334,7 @@ struct Solver {
         State state; // 開始状態
         initState(state);
         state.write();
+        cerr << "score=" << state.calcScore() << endl;
         // SASolver s;
         // s.solve(state);
         // s.best.write();
