@@ -227,17 +227,14 @@ struct State {
   int calcScore() { 
     int ret = 0;
     Pos cur = start;
-    int did = 0;
     while (true) {
-      assert(did == cur.d);
-      int d = dice[dice_[did][BOTTOM]];
+      int d = dice[dice_[cur.d][BOTTOM]];
       int v = grid_[cur.y][cur.x];
       if (abs(v) == d) ret += v;
       Pos nex = grid[cur.y][cur.x];
       if (nex.eq(start)) break;
       int dir = getDir(cur, nex);
       cur = nex;
-      did = trans_[did][dir];
     }
     return ret;
   }
