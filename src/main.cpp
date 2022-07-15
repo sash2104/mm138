@@ -211,6 +211,10 @@ struct State {
     return 0;
   }
 
+  bool empty(const Pos &p) const {
+    return grid[p.y][p.x].x == -1;
+  }
+
   int size() {
     // 輪の長さ
     int len = 0;
@@ -272,7 +276,7 @@ void initState(State &s) {
       Pos nex = cur.to(dir);
       if (outside(nex)) break;
       s.grid[cur.y][cur.x] = nex;
-      if (s.grid[nex.y][nex.x].x != -1) break;
+      if (!s.empty(nex)) break;
       cur = nex;
     }
   }
