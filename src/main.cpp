@@ -259,7 +259,10 @@ struct State {
     btarget = target;
     // show(grid);
     // cerr << cur << target << endl;
-    dfs(bsrc, bsrc, target, 0);
+    if (!dfs(bsrc, bsrc, target, 0)) {
+      revert();
+      return -INF;
+    }
     // show(grid);
 
 
@@ -330,7 +333,7 @@ struct State {
   }
 
   void revert() {
-    show(grid);
+    // show(grid);
     Pos cur = bsrc;
     while (true) {
       assert(cur.x != -1);
@@ -348,6 +351,7 @@ struct State {
       cur = bpos[i];
     }
     score = bscore;
+    // show(grid);
   } // update()適用前の状態に戻す.
 
   void write() {
@@ -446,9 +450,9 @@ struct Solver {
         initState(state);
 
         REP(i,100) {
-          state.update();
+        int diff = state.update();
         }
-        // state.revert();
+        // if (diff != -INF) state.revert();
 
         // Pos start = state.grid[0][1];
         // cerr << start << state.grid[0][4] << endl;
