@@ -410,7 +410,7 @@ void initState(State &s) {
     // s.dice[i] = v;
     // --v;
     // if (v <= 0) v = V;
-    s.dice[i] = V-i%2;
+    s.dice[i] = V-i%3;
   }
   s.start = Pos(0,0,0);
   Pos cur = s.start;
