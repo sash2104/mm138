@@ -319,7 +319,8 @@ struct State {
     btarget = target;
     // show(grid);
     // cerr << bsrc << target << endl;
-    if (!dfs(bsrc, bsrc, target, 0)) {
+    int len2 = dfs(bsrc, bsrc, target, 0);
+    if (len2 == -1) {
       return -INF;
     }
     int diff2 = calcDiffScore(bsrc, btarget);
@@ -346,7 +347,7 @@ struct State {
     return grid[p.y][p.x].x == -1;
   }
 
-  bool dfs(const Pos &cur, const Pos &src, const Pos &target, int depth) {
+  int dfs(const Pos &cur, const Pos &src, const Pos &target, int depth) {
     if (cur == target) {
       assert(!empty(cur));
       // Pos fr = src;
@@ -358,19 +359,19 @@ struct State {
       //   fr = nex;
       // }
       // cerr << endl;
-      return true;
+      return depth;
     }
-    if (!empty(cur)) return false;
+    if (!empty(cur)) return -1;
     // targetにたどり着けない場合は枝刈り
-    if (cur.distance(target) > MAX_DEPTH-depth) return false;
-    vector<int> &order = orders_[rng.nextInt(orders_.size())];
+    if (cur.distance(target) > MAX_DEPTH-depth) return -1;
 
     vector<pair<double,int>> scores;
     REP(dir,4) {
       Pos nex = cur.to(dir);
       if (outside(nex)) continue;
       // 距離の近さ+乱数をスコアとしスコアの小さいところを優先して選ぶ
-      // scores.emplace_back(nex.distance(target)+rng.nextDouble()*10, dir);
+      // cerr << dir << target << nex << endl;
+      // scores.emplace_back(nex.distance(target)+rng.nextDouble()*2, dir);
 
       // 完全ランダム
       scores.emplace_back(rng.nextDouble(), dir);
@@ -381,10 +382,11 @@ struct State {
       Pos nex = cur.to(dir);
       if (outside(nex)) continue;
       grid[cur.y][cur.x] = nex;
-      if (dfs(nex, src, target, depth+1)) return true;
+      int ret = dfs(nex, src, target, depth+1);
+      if (ret != -1) return ret;
       grid[cur.y][cur.x] = Pos();
     }
-    return false;
+    return -1;
   }
 
   int size() {
@@ -505,6 +507,7 @@ void initState(State &s) {
       cur = nex;
     }
   }
+  s.score = s.calcScore();
 }
 
 struct SASolver {
@@ -520,10 +523,7 @@ struct SASolver {
 
   void solve(State &state) {
     double t;
-    state.score = state.calcScore();
-    int score = state.score;
     best = state;
-    int bestScore = score;
     int counter = 0;
     while ((t = timer.get()) < timer.LIMIT) // 焼きなまし終了時刻までループ
     {
@@ -542,11 +542,9 @@ struct SASolver {
         // cerr << t << " " << T << " " << tr << endl;
         if (diff >= tr)
         {
-          score += diff;
-          if (bestScore < score) {
-            bestScore = score;
+          if (best.score < state.score) {
             best = state;
-            cerr << "time = " << t << ", counter = " << counter << ", score = " << bestScore << endl;
+            cerr << "time = " << t << ", counter = " << counter << ", score = " << best.score << endl;
             // best.write();
           }
         }
@@ -554,7 +552,7 @@ struct SASolver {
         ++counter;
       }
     }
-    cerr << "counter = " << counter << ", score = " << bestScore << " " << best.calcScore() << endl;
+    cerr << "counter = " << counter << ", score = " << best.score << " " << best.calcScore() << endl;
   }
 };
 
@@ -587,7 +585,8 @@ struct Solver {
         s.solve(state);
         s.best.write();
         // show(s.best.grid);
-        cerr << "score=" << s.best.calcScore() << endl;
+        int score = s.best.calcScore();
+        cerr << "score=" << score << " " << score*B << endl;
     }
 
     void readInput() { // loopから抜け出す時にtrue
