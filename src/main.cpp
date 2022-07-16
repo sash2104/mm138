@@ -276,6 +276,25 @@ struct State {
     return score-bscore;
   }
 
+  int clear(const Pos &src, int *len, Pos &target) {
+    int ret = 0;
+    Pos cur = src;
+    REP(i,*len) {
+      Pos nex = grid[cur.y][cur.x];
+      // cerr << cur << nex << start << goal << endl;
+      bpos[i] = nex;
+      target = nex;
+      grid[cur.y][cur.x] = Pos();
+      // cerr << i << cur << nex << endl;
+      if (nex.eq(goal)) {
+        *len = i+1;
+        break;
+      }
+      cur = nex;
+    }
+    return ret;
+  }
+
   int update1() { 
     btype = 1;
     int len = rng.nextInt(3,MAX_DEPTH-2);
@@ -289,19 +308,20 @@ struct State {
     Pos cur = grid[y][x];
     bsrc = cur;
     Pos target;
-    REP(i,len) {
-      Pos nex = grid[cur.y][cur.x];
-      // cerr << cur << nex << start << goal << endl;
-      bpos[i] = nex;
-      target = nex;
-      grid[cur.y][cur.x] = Pos();
-      // cerr << i << cur << nex << endl;
-      if (nex.eq(goal)) {
-        len = i+1;
-        break;
-      }
-      cur = nex;
-    }
+    int diff1 = clear(cur, &len, target);
+    // REP(i,len) {
+    //   Pos nex = grid[cur.y][cur.x];
+    //   // cerr << cur << nex << start << goal << endl;
+    //   bpos[i] = nex;
+    //   target = nex;
+    //   grid[cur.y][cur.x] = Pos();
+    //   // cerr << i << cur << nex << endl;
+    //   if (nex.eq(goal)) {
+    //     len = i+1;
+    //     break;
+    //   }
+    //   cur = nex;
+    // }
     blen = len;
     bscore = score;
     btarget = target;
@@ -312,6 +332,8 @@ struct State {
     }
     // show(grid);
     score = calcScore();
+    // int diff = calcDiffScore(bsrc, btarget);
+    // assert(score-bscore == diff);
 
 
     return score-bscore;
@@ -382,6 +404,25 @@ struct State {
       cur = nex;
     }
     return len; 
+  }
+
+  int calcDiffScore(const Pos &src, const Pos &target) {
+    int ret = 0;
+    Pos cur = src;
+    while (true) {
+      assert(cur.d != -1);
+      int d = dice[dice_[cur.d][BOTTOM]];
+      int v = grid_[cur.y][cur.x];
+      // cerr << cur;
+      // REP(i,6) { cerr << dice[dice_[cur.d][i]]; }
+      // cerr << " " << d << v << endl;
+      if (abs(v) == d) ret += v;
+      if (cur.eq(target)) break;
+      Pos nex = grid[cur.y][cur.x];
+      int dir = getDir(cur, nex);
+      cur = nex;
+    }
+    return ret;
   }
 
   int calcScore() { 
@@ -513,7 +554,7 @@ struct SASolver {
           if (bestScore < score) {
             bestScore = score;
             best = state;
-            // cerr << "time = " << t << ", counter = " << counter << ", score = " << bestScore << endl;
+            cerr << "time = " << t << ", counter = " << counter << ", score = " << bestScore << endl;
             // best.write();
           }
         }
