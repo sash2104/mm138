@@ -511,6 +511,31 @@ void initState(State &s) {
   s.score = s.calcScore();
 }
 
+void initState2(State &s) {
+  int v = V;
+  REP(i,6) {
+    // s.dice[i] = v;
+    // --v;
+    // if (v <= 0) v = V;
+    s.dice[i] = V-i%3;
+  }
+  int cx = N/2;
+  int cy = N/2;
+  s.start = Pos(cx-2,cy-2,0);
+  Pos cur = s.start;
+  for (int dir: {RIGHT, DOWN, LEFT, UP}) {
+    REP(i,3) {
+      Pos nex = cur.to(dir);
+      if (outside(nex)) break;
+      s.grid[cur.y][cur.x] = nex;
+      s.goal = cur;
+      if (!s.empty(nex)) break;
+      cur = nex;
+    }
+  }
+  s.score = s.calcScore();
+}
+
 struct SASolver {
   double startTemp = 3;
   double endTemp = 0.001;
@@ -545,7 +570,7 @@ struct SASolver {
         {
           if (best.score < state.score) {
             best = state;
-            cerr << "time = " << t << ", counter = " << counter << ", score = " << best.score << endl;
+            // cerr << "time = " << t << ", counter = " << counter << ", score = " << best.score << endl;
             // best.write();
           }
         }
@@ -568,6 +593,8 @@ struct Solver {
     void solve() {
         State state; // 開始状態
         initState(state);
+        // initState2(state);
+        // show(state.grid);
 
         // REP(i,100) {
         // int diff = state.update();
