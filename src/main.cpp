@@ -277,6 +277,7 @@ struct State {
   }
 
   int clear(const Pos &src, int *len, Pos &target) {
+    // clearすることにより減るスコアを返す
     int ret = 0;
     Pos cur = src;
     REP(i,*len) {
@@ -284,6 +285,10 @@ struct State {
       // cerr << cur << nex << start << goal << endl;
       bpos[i] = nex;
       target = nex;
+      int d = dice[dice_[cur.d][BOTTOM]];
+      int v = grid_[cur.y][cur.x];
+      if (abs(v) == d) ret -= v;
+      // cerr << "[cl]" << cur << nex << d << v << endl;
       grid[cur.y][cur.x] = Pos();
       // cerr << i << cur << nex << endl;
       if (nex.eq(goal)) {
@@ -309,19 +314,6 @@ struct State {
     bsrc = cur;
     Pos target;
     int diff1 = clear(cur, &len, target);
-    // REP(i,len) {
-    //   Pos nex = grid[cur.y][cur.x];
-    //   // cerr << cur << nex << start << goal << endl;
-    //   bpos[i] = nex;
-    //   target = nex;
-    //   grid[cur.y][cur.x] = Pos();
-    //   // cerr << i << cur << nex << endl;
-    //   if (nex.eq(goal)) {
-    //     len = i+1;
-    //     break;
-    //   }
-    //   cur = nex;
-    // }
     blen = len;
     bscore = score;
     btarget = target;
@@ -330,11 +322,13 @@ struct State {
     if (!dfs(bsrc, bsrc, target, 0)) {
       return -INF;
     }
-    // show(grid);
-    score = calcScore();
-    // int diff = calcDiffScore(bsrc, btarget);
-    // assert(score-bscore == diff);
+    int diff2 = calcDiffScore(bsrc, btarget);
+    score += diff1+diff2;
 
+    // show(grid);
+    // score = calcScore();
+    // cerr << score-bscore << " " << diff1+diff2 << " " << diff1 << " " << diff2 << endl;
+    // assert(score-bscore == diff1+diff2);
 
     return score-bscore;
   }
@@ -413,13 +407,11 @@ struct State {
       assert(cur.d != -1);
       int d = dice[dice_[cur.d][BOTTOM]];
       int v = grid_[cur.y][cur.x];
-      // cerr << cur;
       // REP(i,6) { cerr << dice[dice_[cur.d][i]]; }
-      // cerr << " " << d << v << endl;
       if (abs(v) == d) ret += v;
-      if (cur.eq(target)) break;
       Pos nex = grid[cur.y][cur.x];
-      int dir = getDir(cur, nex);
+      // cerr << "[ad]" <<  cur << nex << d << v << endl;
+      if (nex.eq(target)) break;
       cur = nex;
     }
     return ret;
