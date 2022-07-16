@@ -242,6 +242,7 @@ void show(const grid_t &grid) {
     }
     cerr << '\n';
   }
+  cerr << '\n';
 }
 
 struct State {
@@ -260,7 +261,7 @@ struct State {
     int len = rng.nextInt(3,MAX_DEPTH-2);
     int x = rng.nextInt(N);
     int y = rng.nextInt(N);
-    while(empty(x, y)) {
+    while(empty(x, y) || Pos(x,y).eq(goal) || grid[y][x].eq(goal)) {
       x = rng.nextInt(N);
       y = rng.nextInt(N);
     }
@@ -270,6 +271,7 @@ struct State {
     Pos target;
     REP(i,len) {
       Pos nex = grid[cur.y][cur.x];
+      // cerr << cur << nex << start << goal << endl;
       bpos[i] = nex;
       target = nex;
       grid[cur.y][cur.x] = Pos();
@@ -347,10 +349,14 @@ struct State {
   int calcScore() { 
     int ret = 0;
     Pos cur = start;
+    // show(grid);
     while (true) {
+      assert(cur.d != -1);
       int d = dice[dice_[cur.d][BOTTOM]];
       int v = grid_[cur.y][cur.x];
-      // cerr << cur << d << " " << v << endl;
+      // cerr << cur;
+      // REP(i,6) { cerr << dice[dice_[cur.d][i]]; }
+      // cerr << " " << d << v << endl;
       if (abs(v) == d) ret += v;
       Pos nex = grid[cur.y][cur.x];
       if (nex.eq(start)) break;
@@ -438,7 +444,6 @@ struct SASolver {
     best = state;
     int bestScore = score;
     int counter = 0;
-    return;
     while ((t = timer.get()) < timer.LIMIT) // 焼きなまし終了時刻までループ
     {
       double T = startTemp + (endTemp - startTemp) * t / timer.LIMIT;
@@ -499,9 +504,6 @@ struct Solver {
         // state.write();
         SASolver s;
         s.solve(state);
-        REP(i,100) {
-          s.best.update();
-        }
         s.best.write();
         show(s.best.grid);
         cerr << "score=" << s.best.calcScore() << endl;
