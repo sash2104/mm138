@@ -300,7 +300,7 @@ struct State {
     return ret;
   }
 
-  int update1() { 
+  double update1() { 
     btype = 1;
     int len = rng.nextInt(3,MAX_DEPTH-2);
     int x = rng.nextInt(N);
@@ -331,9 +331,10 @@ struct State {
     // cerr << score-bscore << " " << diff1+diff2 << " " << diff1 << " " << diff2 << endl;
     // assert(score-bscore == diff1+diff2);
 
-    return score-bscore;
+    // 短い経路を優先させる
+    return score-bscore+(len-len2);
   }
-  int update() { 
+  double update() { 
     int p = rng.nextInt(100);
     if (p == 0) return update2();
     return update1();
@@ -529,8 +530,8 @@ struct SASolver {
     {
       double T = startTemp + (endTemp - startTemp) * t / timer.LIMIT;
       for (int i = 0; i < 100; ++i) { // 時間計算を間引く
-        int diff = state.update();
-        if (diff == -INF) {
+        double diff = state.update();
+        if (diff <= -INF+0.1) {
           state.revert();
           continue;
         }
