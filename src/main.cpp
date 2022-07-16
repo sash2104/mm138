@@ -256,8 +256,28 @@ struct State {
   int blen;
   Pos bsrc, btarget;
   int bx, by;
+  int btype;
+  int bdid, bv;
   State(): dice(6), grid(N,vector<Pos>(N)), bpos(MAX_DEPTH+1) {}
-  int update() { 
+  int update2() {
+    // diceの数字変更
+    btype = 2;
+    int did = rng.nextInt(6);
+    int vmin = max(1, V-2);
+    int v = rng.nextInt(vmin, V);
+    while (v == dice[did]) {
+      v = rng.nextInt(vmin, V);
+    }
+    bscore = score;
+    bdid = did;
+    bv = dice[did];
+    dice[did] = v;
+    score = calcScore();
+    return score-bscore;
+  }
+
+  int update1() { 
+    btype = 1;
     int len = rng.nextInt(3,MAX_DEPTH-2);
     int x = rng.nextInt(N);
     int y = rng.nextInt(N);
@@ -296,6 +316,11 @@ struct State {
 
     return score-bscore;
   }
+  int update() { 
+    int p = rng.nextInt(100);
+    if (p == 0) return update2();
+    return update1();
+  }
 
   bool empty(int x, int y) const {
     return grid[y][x].x == -1;
@@ -323,7 +348,20 @@ struct State {
     // targetにたどり着けない場合は枝刈り
     if (cur.distance(target) > MAX_DEPTH-depth) return false;
     vector<int> &order = orders_[rng.nextInt(orders_.size())];
-    for (int dir: order) {
+
+    vector<pair<double,int>> scores;
+    REP(dir,4) {
+      Pos nex = cur.to(dir);
+      if (outside(nex)) continue;
+      // 距離の近さ+乱数をスコアとしスコアの小さいところを優先して選ぶ
+      // scores.emplace_back(nex.distance(target)+rng.nextDouble()*10, dir);
+
+      // 完全ランダム
+      scores.emplace_back(rng.nextDouble(), dir);
+    }
+    sort(ALL(scores));
+    for (auto it: scores) {
+      int dir = it.second;
       Pos nex = cur.to(dir);
       if (outside(nex)) continue;
       grid[cur.y][cur.x] = nex;
@@ -367,6 +405,16 @@ struct State {
   }
 
   void revert() {
+    if (btype == 1) revert1();
+    else if (btype == 2) revert2();
+  }
+
+  void revert2() {
+    score = bscore;
+    dice[bdid] = bv;
+  }
+
+  void revert1() {
     // show(grid);
     Pos cur = bsrc;
     while (true) {
@@ -465,7 +513,7 @@ struct SASolver {
           if (bestScore < score) {
             bestScore = score;
             best = state;
-            cerr << "time = " << t << ", counter = " << counter << ", score = " << bestScore << endl;
+            // cerr << "time = " << t << ", counter = " << counter << ", score = " << bestScore << endl;
             // best.write();
           }
         }
@@ -505,7 +553,7 @@ struct Solver {
         SASolver s;
         s.solve(state);
         s.best.write();
-        show(s.best.grid);
+        // show(s.best.grid);
         cerr << "score=" << s.best.calcScore() << endl;
     }
 
