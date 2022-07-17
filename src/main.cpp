@@ -182,10 +182,10 @@ static constexpr short TOP = 0;
 static constexpr short BOTTOM = 1;
 
 struct Pos {
-  int x = -1, y = -1, d = -1;
+  short x = -1, y = -1, d = -1;
   Pos() {}
-  Pos(int x, int y): x(x), y(y) {}
-  Pos(int x, int y, int d): x(x), y(y), d(d) {}
+  Pos(short x, short y): x(x), y(y) {}
+  Pos(short x, short y, short d): x(x), y(y), d(d) {}
   bool eq(const Pos &other) const {
     return (other.x == x) && (other.y == y);
   }
@@ -195,10 +195,10 @@ struct Pos {
   bool operator != (const Pos &other) const { 
     return !((*this) == other);
   }
-  int distance(const Pos &other) const {
+  short distance(const Pos &other) const {
     return abs(x-other.x)+abs(y-other.y);
   }
-  Pos to(int dir) const {
+  Pos to(short dir) const {
     // assert(d != -1);
     return Pos(x+DX[dir],y+DY[dir], trans_[d][dir]);
   }
@@ -356,20 +356,22 @@ struct State {
   }
 
   int dfs(const Pos &cur, const Pos &src, const Pos &target, int depth) {
-    if (cur == target) {
-      assert(!empty(cur));
-      // Pos fr = src;
-      // while(true) {
-      //   Pos nex = grid[fr.y][fr.x];
-      //   assert(nex.x != -1);
-      //   cerr << nex;
-      //   if (nex == target) break;
-      //   fr = nex;
-      // }
-      // cerr << endl;
-      return depth;
+    if (!empty(cur)) {
+      if (cur == target) {
+        assert(!empty(cur));
+        // Pos fr = src;
+        // while(true) {
+        //   Pos nex = grid[fr.y][fr.x];
+        //   assert(nex.x != -1);
+        //   cerr << nex;
+        //   if (nex == target) break;
+        //   fr = nex;
+        // }
+        // cerr << endl;
+        return depth;
+      }
+      return -1;
     }
-    if (!empty(cur)) return -1;
     // targetにたどり着けない場合は枝刈り
     if (cur.distance(target) > MAX_DEPTH-depth) return -1;
 
@@ -594,8 +596,8 @@ void initState3(State &s) {
 struct SASolver {
   double startTemp = 3;
   double endTemp = 0.001;
-  // Timer timer = Timer(2.85);
-  Timer timer = Timer(9.55);
+  Timer timer = Timer(2.85);
+  // Timer timer = Timer(9.55);
   // Timer timer = Timer(29.55);
   State best;
   SASolver() { init(); }
@@ -627,7 +629,7 @@ struct SASolver {
           if (best.score < state.score) {
             best = state;
             cerr << "time = " << t << ", counter = " << counter << ", score = " << best.score << endl;
-            best.write();
+            // best.write();
           }
         }
         else { state.revert(); }
