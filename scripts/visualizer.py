@@ -16,36 +16,8 @@ def parse_arguments():
     args = parser.parse_args()
     return args
 
-W = 600
-H = 600
-
-def draw_out(canvas, out, ans, edges):
-    dx = 700
-    # indexのための番兵を足す
-    mat = [[0]+list(range(len(out)))]
-    for i, l in enumerate(out):
-        mat.append([i]+l)
-    n = len(mat)
-    size = W//n
-    given = set()
-    for edge in edges:
-        given.add((edge[0]+1, edge[1]+1))
-        given.add((edge[1]+1, edge[0]+1))
-    for i in range(n):
-        for j in range(n):
-            color = None
-            if i == 0 or j == 0:
-                color = 'gray'
-            elif out[i-1][j-1] == ans[i-1][j-1]:
-                color = 'green'
-            elif out[i-1][j-1] < ans[i-1][j-1]:
-                if (i,j) in given:
-                    color = 'red'
-                else:
-                    color = 'orange'
-            canvas.create_rectangle(dx+i*size, j*size, dx+(i+1)*size, (j+1)*size, fill = color, outline ='#00f')         # 四角形で塗りつぶし
-            if mat[i][j] != INF:
-                canvas.create_text(dx+i*size+size//2, j*size+size//2, text=str(mat[i][j]), font=("Helvetica", size//2))
+W = 700
+H = 700
 
 def ri(f):
     return int(f.readline())
@@ -66,7 +38,7 @@ class Input:
             for r in range(self.N):
                 row = [ri(f) for c in range(self.N)]
                 self.grid.append(row)
-            self.show()
+            # self.show()
     
     def show(self):
         for r in range(self.N):
@@ -153,6 +125,7 @@ def getDir(cur: Pos, nex: Pos):
 class Output:
     dice: list[int] = field(default_factory=list)
     moves: list[Pos] = field(default_factory=list)
+    score: int = 0
 
     def load(self, lines: list[str]):
         # 読み込んだ行数を返す
@@ -184,6 +157,16 @@ class Output:
         # for i in range(6):
         #     print(self.dice[dice_[self.moves[mid].d][i]])
         return self.dice[dice_[self.moves[mid].d][1]]
+
+    def calcScore(self, input: Input):
+        ret = 0
+        for i, move in enumerate(self.moves):
+            d = self.getBottom(i)
+            v = input.grid[move.y][move.x]
+            if abs(v) == d:
+                ret += v
+        self.score = ret
+        return ret
 
 
 class Outputs:
@@ -217,7 +200,7 @@ class Application(tkinter.Frame):
         super().__init__(master)
         self.master = master
         self.master.title('tkinter canvas trial')
-        self.master.geometry('1600x1200')
+        self.master.geometry('1200x800')
         self.pack()
         self.create_widgets()
         self.input = Input()
@@ -228,40 +211,86 @@ class Application(tkinter.Frame):
 
     def load_output(self, filepath):
         self.output.load(filepath)
+        for out in self.output.outputs:
+            out.calcScore(self.input)
+
+    def draw(self):
+        self.canvas.delete("all")
+        self.draw_output()
+        self.draw_input()
+        self.canvas.update()
+        self.infoCanvas.delete("all")
+        self.draw_info()
+        self.infoCanvas.update()
 
     def draw_input(self):
         size = W//self.input.N
         for y in range(self.input.N):
             for x in range(self.input.N):
                 self.canvas.create_text(x*size+size//2, y*size+size//2, text=str(self.input.grid[y][x]), font=("Helvetica", size//2))
-        self.canvas.update()
 
     def draw_output(self):
         size = W//self.input.N
         cur = self.output.get()
+        pmove = None
         for i, move in enumerate(cur.moves):
             d = cur.getBottom(i)
             x = move.x
             y = move.y
             v = self.input.grid[y][x]
             if abs(v) == d:
-                self.canvas.create_rectangle(x*size, y*size, (x+1)*size, (y+1)*size, fill = 'Green')
-        self.canvas.update()
+                if v > 0:
+                    color = 'Green'
+                else:
+                    color = 'Red'
+                self.canvas.create_rectangle(x*size, y*size, (x+1)*size, (y+1)*size, fill = color)
+            if pmove is not None:
+                self.canvas.create_line(
+                    pmove.x*size+size//2,
+                    pmove.y*size+size//2,
+                    move.x*size+size//2,
+                    move.y*size+size//2,
+                )
+            pmove = move
+
+    def draw_info(self):
+        option = {
+            "font": ("Helvetica", 10),
+            "anchor": "w",
+        }
+        h = 10
+        self.infoCanvas.create_text(0, h, text=f"N={self.input.N} V={self.input.V} B={self.input.B:.3f}", **option)
+        h += 15
+        # outputの情報
+        self.infoCanvas.create_text(0, h, text=f"step = {self.output.oid+1} / {len(self.output.outputs)}", **option)
+        h += 15
+        cur = self.output.get()
+        self.infoCanvas.create_text(0, h, text=f"score = {cur.score} ({cur.score*self.input.B:.1f})", **option)
 
     def create_widgets(self):
-        self.next_button = tkinter.ttk.Button(self, text='+1')
-        self.next_button.grid(row=0, column=1)
-        self.next_button.bind('<Button-1>', self.next)
         self.canvas = tk.Canvas(self, width = W, height = H)
         self.canvas.grid(row=0, column=0, rowspan=3)
         self.canvas.update()
+
+        self.prev_button = tkinter.ttk.Button(self, text='-1')
+        self.prev_button.grid(row=1, column=1)
+        self.prev_button.bind('<Button-1>', self.prev)
+
+        self.next_button = tkinter.ttk.Button(self, text='+1')
+        self.next_button.grid(row=1, column=2)
+        self.next_button.bind('<Button-1>', self.next)
+
+
+        self.infoCanvas = tk.Canvas(self, width = 200, height = 100)
+        self.infoCanvas.grid(row=0, column=1)
     
     def next(self, event):
         self.output.next()
-        self.canvas.delete("all")
-        self.draw_output()
-        self.draw_input()
-        self.canvas.update()
+        self.draw()
+
+    def prev(self, event):
+        self.output.prev()
+        self.draw()
 
 
 
@@ -271,8 +300,7 @@ def main(args):
     app = Application(master=root)
     app.load_input(args.input_file)
     app.load_output(args.output_file)
-    app.draw_output()
-    app.draw_input()
+    app.draw()
     app.mainloop()
 
     # n, edges = load_input(args.input_file)
