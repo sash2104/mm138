@@ -199,7 +199,7 @@ struct Pos {
     return abs(x-other.x)+abs(y-other.y);
   }
   Pos to(int dir) const {
-    assert(d != -1);
+    // assert(d != -1);
     return Pos(x+DX[dir],y+DY[dir], trans_[d][dir]);
   }
 
@@ -373,21 +373,31 @@ struct State {
     // targetにたどり着けない場合は枝刈り
     if (cur.distance(target) > MAX_DEPTH-depth) return -1;
 
-    vector<pair<double,int>> scores;
-    REP(dir,4) {
-      Pos nex = cur.to(dir);
-      if (outside(nex)) continue;
-      if (!empty(cur) && cur != target) continue;
-      // 距離の近さ+乱数をスコアとしスコアの小さいところを優先して選ぶ
-      // cerr << dir << target << nex << endl;
-      // scores.emplace_back(nex.distance(target)+rng.nextDouble()*2, dir);
+    // vector<pair<double,int>> scores;
+    // REP(dir,4) {
+    //   Pos nex = cur.to(dir);
+    //   if (outside(nex)) continue;
+    //   if (!empty(cur) && cur != target) continue;
+    //   // 距離の近さ+乱数をスコアとしスコアの小さいところを優先して選ぶ
+    //   // cerr << dir << target << nex << endl;
+    //   // scores.emplace_back(nex.distance(target)+rng.nextDouble()*2, dir);
 
-      // 完全ランダム
-      scores.emplace_back(rng.nextDouble(), dir);
-    }
-    sort(ALL(scores));
-    for (auto it: scores) {
-      int dir = it.second;
+    //   // 完全ランダム
+    //   scores.emplace_back(rng.nextDouble(), dir);
+    // }
+    // sort(ALL(scores));
+    // for (auto it: scores) {
+    //   int dir = it.second;
+    //   Pos nex = cur.to(dir);
+    //   if (outside(nex)) continue;
+    //   grid[cur.y][cur.x] = nex;
+    //   int ret = dfs(nex, src, target, depth+1);
+    //   if (ret != -1) return ret;
+    //   grid[cur.y][cur.x] = Pos();
+    // }
+
+    int oid = rng.nextInt(24);
+    for (int dir: orders_[oid]) {
       Pos nex = cur.to(dir);
       if (outside(nex)) continue;
       grid[cur.y][cur.x] = nex;
@@ -584,8 +594,8 @@ void initState3(State &s) {
 struct SASolver {
   double startTemp = 3;
   double endTemp = 0.001;
-  Timer timer = Timer(2.85);
-  // Timer timer = Timer(9.55);
+  // Timer timer = Timer(2.85);
+  Timer timer = Timer(9.55);
   // Timer timer = Timer(29.55);
   State best;
   SASolver() { init(); }
