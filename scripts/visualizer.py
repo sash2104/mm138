@@ -4,6 +4,7 @@ import argparse
 import copy
 from dataclasses import dataclass, field
 import sys
+import time
 import tkinter as tk
 import tkinter.ttk
 import tkinter.messagebox as tkm
@@ -225,20 +226,26 @@ class Application(tkinter.Frame):
 
     def draw_input(self):
         size = W//self.input.N
+        cur = self.output.get()
         for y in range(self.input.N):
             for x in range(self.input.N):
+                v = self.input.grid[y][x]
+                if v in cur.dice and (x,y) not in self.used:
+                    self.canvas.create_rectangle(x*size, y*size, (x+1)*size, (y+1)*size, fill = 'Blue')
                 self.canvas.create_text(x*size+size//2, y*size+size//2, text=str(self.input.grid[y][x]), font=("Helvetica", size//2))
 
     def draw_output(self):
         size = W//self.input.N
         cur = self.output.get()
         pmove = None
+        self.used = set()
         for i, move in enumerate(cur.moves):
             d = cur.getBottom(i)
             x = move.x
             y = move.y
             v = self.input.grid[y][x]
             if abs(v) == d:
+                self.used.add((x,y))
                 if v > 0:
                     color = 'Green'
                 else:
@@ -261,10 +268,13 @@ class Application(tkinter.Frame):
         h = 10
         self.infoCanvas.create_text(0, h, text=f"N={self.input.N} V={self.input.V} B={self.input.B:.3f}", **option)
         h += 15
+        h += 15
         # outputの情報
         self.infoCanvas.create_text(0, h, text=f"step = {self.output.oid+1} / {len(self.output.outputs)}", **option)
         h += 15
         cur = self.output.get()
+        self.infoCanvas.create_text(0, h, text=f"dice = {''.join(map(str,cur.dice))}", **option)
+        h += 15
         self.infoCanvas.create_text(0, h, text=f"score = {cur.score} ({cur.score*self.input.B:.1f})", **option)
 
     def create_widgets(self):
@@ -272,12 +282,16 @@ class Application(tkinter.Frame):
         self.canvas.grid(row=0, column=0, rowspan=3)
         self.canvas.update()
 
-        self.prev_button = tkinter.ttk.Button(self, text='-1')
+        self.prev_button = tkinter.ttk.Button(self, text='<')
         self.prev_button.grid(row=1, column=1)
         self.prev_button.bind('<Button-1>', self.prev)
 
-        self.next_button = tkinter.ttk.Button(self, text='+1')
-        self.next_button.grid(row=1, column=2)
+        self.run_button = tkinter.ttk.Button(self, text='r')
+        self.run_button.grid(row=1, column=2)
+        self.run_button.bind('<Button-1>', self.run)
+
+        self.next_button = tkinter.ttk.Button(self, text='>')
+        self.next_button.grid(row=1, column=3)
         self.next_button.bind('<Button-1>', self.next)
 
 
@@ -287,6 +301,12 @@ class Application(tkinter.Frame):
     def next(self, event):
         self.output.next()
         self.draw()
+
+    def run(self, event):
+        while self.output.oid < len(self.output.outputs)-1:
+            self.output.next()
+            self.draw()
+            time.sleep(0.1)
 
     def prev(self, event):
         self.output.prev()
