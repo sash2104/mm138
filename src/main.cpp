@@ -263,7 +263,7 @@ struct State {
     // diceの数字変更
     btype = 2;
     int did = rng.nextInt(6);
-    int vmin = max(1, V-2);
+    int vmin = max(1, V-3);
     int v = rng.nextInt(vmin, V);
     while (v == dice[did]) {
       v = rng.nextInt(vmin, V);
@@ -273,6 +273,7 @@ struct State {
     bv = dice[did];
     dice[did] = v;
     score = calcScore();
+    // return (score-bscore)/(N*N*0.8);
     return score-bscore;
   }
 
@@ -331,11 +332,17 @@ struct State {
     // cerr << score-bscore << " " << diff1+diff2 << " " << diff1 << " " << diff2 << endl;
     // assert(score-bscore == diff1+diff2);
 
-    // 短い経路を優先させる
-    return score-bscore+(len-len2);
+    assert(len > 0 && len2 > 0);
+    // double sc = 1.0*diff1/len+1.0*diff2/len2;
+    double sc = diff1+diff2+(len-len2);
+    // if (sc > 0) {
+    //   D5(diff1, len, diff2, len2, sc);
+    // }
+    return sc;
   }
   double update() { 
-    int p = rng.nextInt(100);
+    if (V >= 7) return update1();
+    int p = rng.nextInt(N*N);
     if (p == 0) return update2();
     return update1();
   }
@@ -370,6 +377,7 @@ struct State {
     REP(dir,4) {
       Pos nex = cur.to(dir);
       if (outside(nex)) continue;
+      if (!empty(cur) && cur != target) continue;
       // 距離の近さ+乱数をスコアとしスコアの小さいところを優先して選ぶ
       // cerr << dir << target << nex << endl;
       // scores.emplace_back(nex.distance(target)+rng.nextDouble()*2, dir);
@@ -473,13 +481,13 @@ struct State {
   } // update()適用前の状態に戻す.
 
   void write() {
-    REP(i,6) cout << dice[i] << endl;
+    REP(i,6) cout << dice[i] << '\n';
 
     int n = size();
-    cout << size() << endl;
+    cout << size() << '\n';
     Pos cur = start;
     REP(i,n) {
-      cout << cur.y << " " << cur.x << endl;
+      cout << cur.y << " " << cur.x << '\n';
       Pos nex = grid[cur.y][cur.x];
       if (i == n-1) assert(nex.eq(start));
       else assert(!nex.eq(start));
@@ -490,12 +498,19 @@ struct State {
 
 void initState(State &s) {
   int v = V;
-  REP(i,6) {
-    // s.dice[i] = v;
-    // --v;
-    // if (v <= 0) v = V;
-    s.dice[i] = V-i%3;
-  }
+  s.dice[0] = V;
+  s.dice[1] = V-1;
+  s.dice[2] = V;
+  s.dice[3] = V-2;
+  s.dice[4] = V-1;
+  if (V > 4) s.dice[5] = V-3;
+  else s.dice[5] = V-2;
+  // REP(i,6) {
+  //   // s.dice[i] = v;
+  //   // --v;
+  //   // if (v <= 0) v = V;
+  //   s.dice[i] = V-i%3;
+  // }
   s.start = Pos(0,0,0);
   Pos cur = s.start;
   for (int dir: {RIGHT, DOWN, LEFT, UP}) {
@@ -536,11 +551,42 @@ void initState2(State &s) {
   s.score = s.calcScore();
 }
 
+void initState3(State &s) {
+  int v = V;
+  s.dice[0] = V;
+  s.dice[1] = V-1;
+  s.dice[2] = V;
+  s.dice[3] = V-1;
+  s.dice[4] = V-2;
+  if (V > 4) s.dice[5] = V-3;
+  else s.dice[5] = V-2;
+  // REP(i,6) {
+  //   // s.dice[i] = v;
+  //   // --v;
+  //   // if (v <= 0) v = V;
+  //   s.dice[i] = V-i%3;
+  // }
+  s.start = Pos(N/2,0,0);
+  Pos cur = s.start;
+  for (int dir: {RIGHT, DOWN, LEFT, UP, RIGHT}) {
+    REP(i,N) {
+      Pos nex = cur.to(dir);
+      if (outside(nex)) break;
+      s.grid[cur.y][cur.x] = nex;
+      s.goal = cur;
+      if (!s.empty(nex)) break;
+      cur = nex;
+    }
+  }
+  s.score = s.calcScore();
+}
+
 struct SASolver {
   double startTemp = 3;
   double endTemp = 0.001;
   Timer timer = Timer(2.85);
-  // Timer timer = Timer(29.85);
+  // Timer timer = Timer(9.55);
+  // Timer timer = Timer(29.55);
   State best;
   SASolver() { init(); }
   SASolver(double st, double et): startTemp(st), endTemp(et) { init(); }
@@ -565,13 +611,13 @@ struct SASolver {
         // 最後t=timer.LIMITのときは、スコアが改善したときのみ、次状態を使用
         // スコアが良くなった or 悪くなっても強制遷移
         double tr = T*rng.nextLog();
-        // cerr << t << " " << T << " " << tr << endl;
+        // cerr << t << " " << T << " " << tr << " " << diff << endl;
         if (diff >= tr)
         {
           if (best.score < state.score) {
             best = state;
-            // cerr << "time = " << t << ", counter = " << counter << ", score = " << best.score << endl;
-            // best.write();
+            cerr << "time = " << t << ", counter = " << counter << ", score = " << best.score << endl;
+            best.write();
           }
         }
         else { state.revert(); }
@@ -593,8 +639,9 @@ struct Solver {
     void solve() {
         State state; // 開始状態
         initState(state);
-        // initState2(state);
+        // initState3(state);
         // show(state.grid);
+        // return;
 
         // REP(i,100) {
         // int diff = state.update();
