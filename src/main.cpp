@@ -272,11 +272,40 @@ struct State {
   int bid;
   int btype;
   int bdid, bv;
-  int bstart, bgoal, bgridgoal;
+  int bstart, bgoal, bgridgoal, bgridstart;
   State(): dice(6), grid(N*N,-1), bpos(MAX_DEPTH+1) {}
 
+  int update5() {
+    // startを前ににずらす
+    btype = 5;
+    bscore = score;
+    Pos sp(start);
+    Pos gp(goalI2%N, goalI2/N);
+    bstart = start;
+    bgoal = goalI2;
+    goalI2 = sp.id2();
+    bgridstart = grid[goalI2];
+    start = grid[goalI2];
+    // cerr << Pos(start) << bp << endl;
+
+    int goal2start = dir_[goalI2][i2_(start)];
+    grid[goalI2] = to_[grid[bgoal]][goal2start];
+
+    int diff = 0;
+    // 変更前のgoal地点のscore
+    int dbef = dice[dice_[d_(bstart)][BOTTOM]];
+    int v = grid_[goalI2];
+    if (abs(v) == dbef) diff -= v;
+    int daft = dice[dice_[d_(grid[bgoal])][BOTTOM]];
+    if (abs(v) == daft) diff += v;
+    // cerr << v << dbef << daft << endl;
+    
+    score += diff;
+    return diff;
+  }
+
   int update4() {
-    // startをずらす
+    // startをgoal方向ににずらす
     btype = 4;
     bscore = score;
     Pos gp(goalI2%N, goalI2/N);
@@ -429,6 +458,7 @@ struct State {
     if (p <= 5) return update2();
     if (p <= 10) return update3();
     if (p <= 20) return update4();
+    if (p <= 30) return update5();
     return update1();
   }
 
@@ -525,6 +555,14 @@ struct State {
     else if (btype == 2) revert2();
     else if (btype == 3) revert3();
     else if (btype == 4) revert4();
+    else if (btype == 5) revert5();
+  }
+
+  void revert5() {
+    score = bscore;
+    start = bstart;
+    goalI2 = bgoal;
+    grid[i2_(start)] = bgridstart;
   }
 
   void revert4() {
@@ -725,10 +763,14 @@ struct Solver {
     void solve() {
         State state; // 開始状態
         initState(state);
+        // REP(i,50) {
+        // state.update5();
+        // }
         // initState3(state);
         // show(state.grid);
-        // return;
         // state.write();
+        // cerr << state.score << endl;
+        // return;
 
         SASolver s;
         s.solve(state);
