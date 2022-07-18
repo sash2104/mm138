@@ -86,7 +86,7 @@ struct Timer {
 // ------------- Constants ------------
 int N, V;
 double B;
-int grid_[30][30];
+int grid_[30*30];
 
 vector<vector<int>> dice_ = {
 {0,1,2,3,4,5},
@@ -301,7 +301,7 @@ struct State {
       bpos[i] = nex;
       *target = nex;
       int d = dice[dice_[d_(cur)][BOTTOM]];
-      int v = grid_[y_(cur)][x_(cur)];
+      int v = grid_[cur/24];
       if (abs(v) == d) ret -= v;
       // cerr << "[cl]" << Pos(cur) << Pos(nex) << endl;
       grid[cur/24] = -1;
@@ -415,7 +415,7 @@ struct State {
     int cur = src;
     while (true) {
       int d = dice[dice_[d_(cur)][BOTTOM]];
-      int v = grid_[y_(cur)][x_(cur)];
+      int v = grid_[cur/24];
       // REP(i,6) { cerr << dice[dice_[cur.d][i]]; }
       if (abs(v) == d) ret += v;
       int nex = grid[cur/24];
@@ -434,7 +434,7 @@ struct State {
     // show(grid);
     while (true) {
       int d = dice[dice_[d_(cur)][BOTTOM]];
-      int v = grid_[y_(cur)][x_(cur)];
+      int v = grid_[cur/24];
       // cerr << cur;
       // REP(i,6) { cerr << dice[dice_[cur.d][i]]; }
       // cerr << " " << d << v << endl;
@@ -669,7 +669,7 @@ struct Solver {
       cin >> N >> V >> B;
 
       REP(r,N) REP(c,N) {
-        cin >> grid_[r][c];
+        cin >> grid_[r*N+c];
       }
     }
 
