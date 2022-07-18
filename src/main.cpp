@@ -689,7 +689,6 @@ struct SASolver {
     double t;
     best = state;
     int counter = 0;
-    int kick_counter = 0;
     while ((t = timer.get()) < timer.LIMIT) // 焼きなまし終了時刻までループ
     {
       double T = startTemp + (endTemp - startTemp) * t / timer.LIMIT;
@@ -704,15 +703,12 @@ struct SASolver {
         // 最後t=timer.LIMITのときは、スコアが改善したときのみ、次状態を使用
         // スコアが良くなった or 悪くなっても強制遷移
         double tr = T*rng.nextLog();
-        ++kick_counter;
         // cerr << t << " " << T << " " << tr << " " << diff << endl;
-        if (diff >= tr || kick_counter > 10000)
-        // if (diff >= tr)
+        if (diff >= tr)
         {
-          kick_counter = 0;
           if (best.score < state.score) {
             best = state;
-            cerr << "time = " << t << ", counter = " << counter << ", score = " << best.score << '\n';
+            // cerr << "time = " << t << ", counter = " << counter << ", score = " << best.score << '\n';
             // best.write();
           }
         }
