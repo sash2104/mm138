@@ -276,7 +276,7 @@ struct State {
   State(): dice(6), grid(N*N,-1), bpos(MAX_DEPTH+1) {}
 
   int update4() {
-    // diceの数字交換
+    // startをずらす
     btype = 4;
     bscore = score;
     Pos gp(goalI2%N, goalI2/N);
@@ -322,15 +322,6 @@ struct State {
     int daft = dice[dice_[d_(start)][BOTTOM]];
     if (abs(v) == daft) diff += v;
     
-    // vector<int> ndice(6);
-    // REP(i,6) {
-    //   ndice[i] = dice[dice_[d_(nsp.id3())][i]];
-    // }
-    // dice = ndice;
-    // REP(i,6) { cerr << dice[i]; }
-    // cerr << endl;
-    // REP(i,6) { cerr << dice[dice_[d_(sp.id3())][i]]; }
-    // cerr << endl;
     assert(ok);
 
     // D4(bstart, start, bgoal, goalI2);
@@ -719,7 +710,7 @@ struct SASolver {
         {
           if (best.score < state.score) {
             best = state;
-            // cerr << "time = " << t << ", counter = " << counter << ", score = " << best.score << '\n';
+            cerr << "time = " << t << ", counter = " << counter << ", score = " << best.score << '\n';
             // best.write();
           }
         }
@@ -745,20 +736,8 @@ struct Solver {
         // initState3(state);
         // show(state.grid);
         // return;
-
-        // REP(i,100) {
-        // int diff = state.update();
-        // }
-        // if (diff != -INF) state.revert();
-
-        // Pos start = state.grid[0][1];
-        // cerr << start << state.grid[0][4] << endl;
-        // Pos bkup = state.grid[start.y][start.x];
-        // state.grid[start.y][start.x] = Pos();
-        // state.dfs(start, start, state.grid[0][4], 0);
-        // state.grid[start.y][start.x] = bkup;
-
         // state.write();
+
         SASolver s;
         s.solve(state);
         s.best.write();
@@ -775,40 +754,6 @@ struct Solver {
       }
     }
 
-    void writeOutput() {
-      return;
-      //print random face values
-      for (int i=0; i<6; i++) cout << (i%V)+1 << endl;
-
-      //move in a spiral
-      int dr[] = {0,1,0,-1};
-      int dc[] = {1,0,-1,0};  
-      int dir = 0;
-      int r = 0;
-      int c = 0;    
-
-      bool seen[N][N];
-      for (int i=0; i<N; i++) for (int k=0; k<N; k++) seen[i][k]=false;
-
-      cout << N*N << endl;
-      for (int i=0; i<N*N; i++)
-      {
-        cout << std::to_string(r)+" "+std::to_string(c) << endl;
-        seen[r][c]=true;
-
-        int r2=r+dr[dir];
-        int c2=c+dc[dir];
-        if (r2<0 || r2>=N || c2<0 || c2>=N || seen[r2][c2])
-        {
-          dir=(dir+1)%4;
-          r2=r+dr[dir];
-          c2=c+dc[dir];        
-        }
-        r=r2;
-        c=c2;
-      } 
-      cout.flush();  
-    }
 };
 
 void initPos() {
@@ -845,6 +790,5 @@ int main()
   solver.readInput();
   initPos();
   solver.solve();
-  solver.writeOutput();
 
 }
