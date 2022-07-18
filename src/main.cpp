@@ -181,6 +181,10 @@ vector<vector<int>> orders_ = {
 static constexpr short TOP = 0;
 static constexpr short BOTTOM = 1;
 
+int to_[30*30*24][4];
+int dist_[30*30][30*30];
+int dir_[30*30][30*30];
+
 struct Pos {
   short x = -1, y = -1, d = -1;
   Pos() {}
@@ -203,6 +207,9 @@ struct Pos {
     return Pos(x+DX[dir],y+DY[dir], trans_[d][dir]);
   }
 
+  int id3() const { return y*N*24+x*24+d; }
+  int id2() const { return y*N+x; }
+
   friend std::ostream& operator<<(std::ostream& os, const Pos &p) {
     os << "(" << p.x << "," << p.y << "," << p.d << ")";
     return os;
@@ -215,7 +222,7 @@ int getDir(const Pos &cur, const Pos &nex) {
   if (cur.x < nex.x) return RIGHT;
   if (cur.y > nex.y) return UP;
   if (cur.y < nex.y) return DOWN;
-  assert(false);
+  return -1;
 }
 
 bool outside(const Pos &p) {
@@ -720,10 +727,35 @@ struct Solver {
     }
 };
 
+void initPos() {
+  REP(i,30*30*24) REP(dir,4) to_[i][dir] = -1;
+  REP(i,30*30) REP(j,30*30) dist_[i][j] = INF;
+  REP(i,30*30) REP(j,30*30) dir_[i][j] = -1;
+  REP(y,N) REP(x,N) {
+    Pos p(x,y,0);
+    int id2 = p.id2();
+    REP(d,24) {
+      p.d = d;
+      int id3 = p.id3();
+      REP(dir,4) {
+        Pos np = p.to(dir);
+        to_[id3][dir] = np.id3();
+      }
+    }
+    REP(ny,N) REP(nx,N) {
+      Pos np(ny,nx,0);
+      int nid2 = np.id2();
+      dist_[id2][nid2] = p.distance(np);
+      dir_[id2][nid2] = getDir(p,np);
+    }
+  }
+}
+
 int main() 
 {
   Solver solver;
   solver.readInput();
+  initPos();
   solver.solve();
   solver.writeOutput();
 
