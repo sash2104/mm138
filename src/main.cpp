@@ -184,9 +184,10 @@ static constexpr short BOTTOM = 1;
 int to_[30*30*32][4];
 int dist_[30*30][30*30];
 int dir_[30*30][30*30];
-int y_(int id3) { return id3/(24*N); }
-int x_(int id3) { return (id3/24)%N; }
-int d_(int id3) { return id3%24; }
+inline int y_(int id3) { return id3/(32*N); }
+inline int x_(int id3) { return (id3/32)%N; }
+inline int d_(int id3) { return id3%32; }
+inline int i2_(int id3) { return id3 >> 5; } // id3 -> id2
 
 struct Pos {
   short x = -1, y = -1, d = -1;
@@ -211,7 +212,7 @@ struct Pos {
     return Pos(x+DX[dir],y+DY[dir], trans_[d][dir]);
   }
 
-  int id3() const { return y*N*24+x*24+d; }
+  int id3() const { return y*N*32+x*32+d; }
   int id2() const { return y*N+x; }
 
   friend std::ostream& operator<<(std::ostream& os, const Pos &p) {
@@ -249,7 +250,7 @@ void show(const grid_t &grid) {
         cerr << '.';
         continue;
       }
-      int dir = dir_[cur][nex/24];
+      int dir = dir_[cur][i2_(nex)];
       cerr << dir2c[dir];
     }
     cerr << '\n';
@@ -295,18 +296,18 @@ struct State {
     int ret = 0;
     int cur = src;
     REP(i,*len) {
-      int nex = grid[cur/24];
+      int nex = grid[i2_(cur)];
       assert(nex != -1);
       // cerr << Pos(cur) << Pos(nex) << Pos(start) << Pos(goal) << endl;
       bpos[i] = nex;
       *target = nex;
       int d = dice[dice_[d_(cur)][BOTTOM]];
-      int v = grid_[cur/24];
+      int v = grid_[i2_(cur)];
       if (abs(v) == d) ret -= v;
       // cerr << "[cl]" << Pos(cur) << Pos(nex) << endl;
-      grid[cur/24] = -1;
+      grid[i2_(cur)] = -1;
       // cerr << i << cur << nex << endl;
-      if (nex/24 == goal/24) {
+      if (i2_(nex) == i2_(goal)) {
         *len = i+1;
         break;
       }
@@ -319,7 +320,7 @@ struct State {
     btype = 1;
     int len = rng.nextInt(3,MAX_DEPTH-2);
     int id = rng.nextInt(N*N);
-    while(grid[id] == -1 || id == goal/24 || grid[id]/24 == goal/24) {
+    while(grid[id] == -1 || id == i2_(goal) || i2_(grid[id]) == i2_(goal)) {
       id = rng.nextInt(N*N);
     }
     bid = id;
@@ -361,7 +362,7 @@ struct State {
   }
 
   bool empty(int p) const {
-    return grid[p/24] == -1;
+    return grid[i2_(p)] == -1;
   }
 
   int dfs(int cur, int src, int target, int depth) {
@@ -381,17 +382,17 @@ struct State {
       return -1;
     }
     // targetにたどり着けない場合は枝刈り
-    if (dist_[cur/24][target/24] > MAX_DEPTH-depth) return -1;
+    if (dist_[i2_(cur)][i2_(target)] > MAX_DEPTH-depth) return -1;
 
     int oid = rng.nextInt(24);
     for (int dir: orders_[oid]) {
       int nex = to_[cur][dir];
       if (nex == -1) continue; // outside
-      assert(grid[cur/24] == -1);
-      grid[cur/24] = nex;
+      // assert(grid[i2_(cur)] == -1);
+      grid[i2_(cur)] = nex;
       int ret = dfs(nex, src, target, depth+1);
       if (ret != -1) return ret;
-      grid[cur/24] = -1;
+      grid[i2_(cur)] = -1;
     }
     return -1;
   }
@@ -402,9 +403,9 @@ struct State {
     int cur = start;
     while (true) {
       ++len;
-      int nex = grid[cur/24];
+      int nex = grid[i2_(cur)];
       assert(nex != -1);
-      if (nex/24 == start/24) break;
+      if (i2_(nex) == i2_(start)) break;
       cur = nex;
     }
     return len; 
@@ -415,13 +416,13 @@ struct State {
     int cur = src;
     while (true) {
       int d = dice[dice_[d_(cur)][BOTTOM]];
-      int v = grid_[cur/24];
+      int v = grid_[i2_(cur)];
       // REP(i,6) { cerr << dice[dice_[cur.d][i]]; }
       if (abs(v) == d) ret += v;
-      int nex = grid[cur/24];
+      int nex = grid[i2_(cur)];
       assert(nex != -1);
       // cerr << "[ad]" <<  cur << nex << d << v << endl;
-      if (nex/24 == target/24) break;
+      if (i2_(nex) == i2_(target)) break;
       cur = nex;
     }
     return ret;
@@ -434,14 +435,14 @@ struct State {
     // show(grid);
     while (true) {
       int d = dice[dice_[d_(cur)][BOTTOM]];
-      int v = grid_[cur/24];
+      int v = grid_[i2_(cur)];
       // cerr << cur;
       // REP(i,6) { cerr << dice[dice_[cur.d][i]]; }
       // cerr << " " << d << v << endl;
       if (abs(v) == d) ret += v;
-      int nex = grid[cur/24];
+      int nex = grid[i2_(cur)];
       assert(nex != -1);
-      if (nex/24 == start/24) break;
+      if (i2_(nex) == i2_(start)) break;
       cur = nex;
     }
     // DEBUG("ok");
@@ -462,9 +463,8 @@ struct State {
     // show(grid);
     int cur = bsrc;
     while (true) {
-      Pos p(cur);
-      int nex = grid[cur/24];
-      grid[cur/24] = -1;
+      int nex = grid[i2_(cur)];
+      grid[i2_(cur)] = -1;
       if (nex == -1) break;
       if (nex == btarget) break;
       cur = nex;
@@ -472,7 +472,7 @@ struct State {
     cur = bsrc;
     REP(i,blen) {
       // cerr << i << cur << bpos[i] << endl;
-      grid[cur/24] = bpos[i];
+      grid[i2_(cur)] = bpos[i];
       cur = bpos[i];
     }
     score = bscore;
@@ -487,7 +487,7 @@ struct State {
     int cur = start;
     REP(i,n) {
       cout << y_(cur) << " " << x_(cur) << '\n';
-      int nex = grid[cur/24];
+      int nex = grid[i2_(cur)];
       // if (i == n-1) assert(nex.eq(start));
       // else assert(!nex.eq(start));
       cur = nex;
@@ -518,9 +518,9 @@ void initState(State &s) {
       Pos p(x_(cur),y_(cur));
       Pos np(x_(nex),y_(nex));
       if (nex == -1) break; // outside
-      s.grid[cur/24] = nex;
+      s.grid[i2_(cur)] = nex;
       s.goal = cur;
-      if (s.grid[nex/24] != -1) break; // not empty
+      if (s.grid[i2_(nex)] != -1) break; // not empty
       cur = nex;
     }
   }
