@@ -149,7 +149,7 @@ static constexpr short LEFT = 2;
 static constexpr short RIGHT = 3;
 int DX[4] = {0, 0, -1, 1};
 int DY[4] = {-1, 1, 0, 0};
-vector<vector<int>> orders_ = {
+vector<vector<short>> orders_ = {
   {0,1,2,3},
   {0,1,3,2},
   {0,2,1,3},
@@ -334,7 +334,7 @@ struct State {
     btarget = target;
     // show(grid);
     // cerr << bsrc << target << endl;
-    int len2 = dfs(bsrc, bsrc, target, 0);
+    int len2 = dfs(bsrc, target, i2_(target), 0);
     if (len2 == -1) {
       return -INF;
     }
@@ -365,7 +365,7 @@ struct State {
     return grid[i2_(p)] == -1;
   }
 
-  int dfs(int cur, int src, int target, int depth) {
+  short dfs(int cur, int target, int targetI2, int depth) {
     if (!empty(cur)) {
       if (cur == target) {
         // Pos fr = src;
@@ -382,15 +382,15 @@ struct State {
       return -1;
     }
     // targetにたどり着けない場合は枝刈り
-    if (dist_[i2_(cur)][i2_(target)] > MAX_DEPTH-depth) return -1;
+    if (dist_[i2_(cur)][targetI2] > MAX_DEPTH-depth) return -1;
 
     int oid = rng.nextInt(24);
-    for (int dir: orders_[oid]) {
+    for (short dir: orders_[oid]) {
       int nex = to_[cur][dir];
       if (nex == -1) continue; // outside
       // assert(grid[i2_(cur)] == -1);
       grid[i2_(cur)] = nex;
-      int ret = dfs(nex, src, target, depth+1);
+      short ret = dfs(nex, target, targetI2, depth+1);
       if (ret != -1) return ret;
       grid[i2_(cur)] = -1;
     }
@@ -585,9 +585,9 @@ void initState(State &s) {
 struct SASolver {
   double startTemp = 3;
   double endTemp = 0.001;
-  Timer timer = Timer(2.85);
+  // Timer timer = Timer(2.85);
   // Timer timer = Timer(9.55);
-  // Timer timer = Timer(29.55);
+  Timer timer = Timer(29.55);
   State best;
   SASolver() { init(); }
   SASolver(double st, double et): startTemp(st), endTemp(et) { init(); }
