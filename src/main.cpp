@@ -261,7 +261,7 @@ void show(const grid_t &grid) {
 struct State {
   vector<int> dice;
   // Pos start, goal;
-  int start, goal;
+  int start, goalI2;  // id2
   grid_t grid;
   int score = -INF;
   // backup
@@ -273,6 +273,28 @@ struct State {
   int btype;
   int bdid, bv;
   State(): dice(6), grid(N*N,-1), bpos(MAX_DEPTH+1) {}
+
+  int update4() {
+    // diceの数字交換
+    blen = 1; // goalのいくつ前まで戻るか
+    btype = 4;
+    bscore = score;
+    Pos gp(goalI2/N, goalI2%N);
+    Pos bp;
+    REP(dir,4) {
+      int bx = gp.x+DX[dir];
+      int by = gp.y+DY[dir];
+      bp = Pos(bx,by);
+      if (outside(bp)) continue;
+      int bid = bp.id2();
+      if (i2_(grid[bid]) == goalI2) break;
+    }
+
+    cerr << bp << gp << endl;
+    // score = calcScore();
+    return score-bscore;
+  }
+
   int update3() {
     // diceの数字交換
     btype = 3;
@@ -319,7 +341,7 @@ struct State {
       // cerr << "[cl]" << Pos(cur) << Pos(nex) << endl;
       grid[i2_(cur)] = -1;
       // cerr << i << cur << nex << endl;
-      if (i2_(nex) == i2_(goal)) {
+      if (i2_(nex) == goalI2) {
         *len = i+1;
         break;
       }
@@ -332,7 +354,7 @@ struct State {
     btype = 1;
     int len = rng.nextInt(3,MAX_DEPTH-2);
     int id = rng.nextInt(N*N);
-    while(grid[id] == -1 || id == i2_(goal) || i2_(grid[id]) == i2_(goal)) {
+    while(grid[id] == -1 || id == goalI2 || i2_(grid[id]) == goalI2) {
       id = rng.nextInt(N*N);
     }
     bid = id;
@@ -543,7 +565,7 @@ void initState(State &s) {
       Pos np(x_(nex),y_(nex));
       if (nex == -1) break; // outside
       s.grid[i2_(cur)] = nex;
-      s.goal = cur;
+      s.goalI2 = i2_(cur);
       if (s.grid[i2_(nex)] != -1) break; // not empty
       cur = nex;
     }
@@ -609,8 +631,8 @@ void initState(State &s) {
 struct SASolver {
   double startTemp = 3;
   double endTemp = 0.001;
-  // Timer timer = Timer(2.85);
-  Timer timer = Timer(9.55);
+  Timer timer = Timer(2.85);
+  // Timer timer = Timer(9.55);
   // Timer timer = Timer(29.55);
   State best;
   SASolver() { init(); }
@@ -684,6 +706,8 @@ struct Solver {
         SASolver s;
         s.solve(state);
         s.best.write();
+        show(s.best.grid);
+        s.best.update4();
         // show(s.best.grid);
         int score = s.best.calcScore();
         cerr << "score=" << score << " " << score*B << endl;
