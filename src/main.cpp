@@ -273,6 +273,18 @@ struct State {
   int btype;
   int bdid, bv;
   State(): dice(6), grid(N*N,-1), bpos(MAX_DEPTH+1) {}
+  int update3() {
+    // diceの数字交換
+    btype = 3;
+    int did = rng.nextInt(5);
+    bscore = score;
+    bdid = did;
+    swap(dice[did], dice[did+1]);
+    score = calcScore();
+    // return (score-bscore)/(N*N*0.8);
+    return score-bscore;
+  }
+
   int update2() {
     // diceの数字変更
     btype = 2;
@@ -355,9 +367,9 @@ struct State {
     return sc;
   }
   double update() { 
-    if (V >= 7) return update1();
-    int p = rng.nextInt(N*N);
+    int p = rng.nextInt(N*20);
     if (p == 0) return update2();
+    if (p == 1) return update3();
     return update1();
   }
 
@@ -452,6 +464,12 @@ struct State {
   void revert() {
     if (btype == 1) revert1();
     else if (btype == 2) revert2();
+    else if (btype == 3) revert3();
+  }
+
+  void revert3() {
+    score = bscore;
+    swap(dice[bdid], dice[bdid+1]);
   }
 
   void revert2() {
@@ -504,6 +522,12 @@ void initState(State &s) {
   s.dice[4] = V-1;
   if (V > 4) s.dice[5] = V-3;
   else s.dice[5] = V-2;
+  // s.dice[0] = 2;
+  // s.dice[1] = 3;
+  // s.dice[2] = 3;
+  // s.dice[3] = 2;
+  // s.dice[4] = 2;
+  // s.dice[5] = 1;
   // REP(i,6) {
   //   // s.dice[i] = v;
   //   // --v;
@@ -586,8 +610,8 @@ struct SASolver {
   double startTemp = 3;
   double endTemp = 0.001;
   // Timer timer = Timer(2.85);
-  // Timer timer = Timer(9.55);
-  Timer timer = Timer(29.55);
+  Timer timer = Timer(9.55);
+  // Timer timer = Timer(29.55);
   State best;
   SASolver() { init(); }
   SASolver(double st, double et): startTemp(st), endTemp(et) { init(); }
@@ -617,7 +641,7 @@ struct SASolver {
         {
           if (best.score < state.score) {
             best = state;
-            cerr << "time = " << t << ", counter = " << counter << ", score = " << best.score << endl;
+            cerr << "time = " << t << ", counter = " << counter << ", score = " << best.score << '\n';
             // best.write();
           }
         }
