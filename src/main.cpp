@@ -272,14 +272,15 @@ struct State {
   int bid;
   int btype;
   int bdid, bv;
+  int bstart, bgoal, bgridgoal;
   State(): dice(6), grid(N*N,-1), bpos(MAX_DEPTH+1) {}
 
   int update4() {
     // diceの数字交換
-    blen = 1; // goalのいくつ前まで戻るか
     btype = 4;
     bscore = score;
-    Pos gp(goalI2/N, goalI2%N);
+    Pos gp(goalI2%N, goalI2/N);
+    Pos sp(start);
     Pos bp;
     REP(dir,4) {
       int bx = gp.x+DX[dir];
@@ -287,11 +288,42 @@ struct State {
       bp = Pos(bx,by);
       if (outside(bp)) continue;
       int bid = bp.id2();
-      if (i2_(grid[bid]) == goalI2) break;
+      // cerr << bp << Pos(grid[bid]) << gp << endl;
+      if (i2_(grid[bid]) == goalI2) {
+        // cerr << bp << gp << endl;
+        break;
+      }
     }
+    bstart = start;
+    bgoal = goalI2;
+    int id;
+    bool ok = false;
+    int goal2start = dir_[gp.id2()][sp.id2()];
+    REP(d,24) {
+      id = Pos(gp.x,gp.y,d).id3();
+      if (to_[id][goal2start] == start) { ok = true; break; }
+    }
+    // cerr << Pos(start) << bp << endl;
+    goalI2 = bp.id2();
 
-    cerr << bp << gp << endl;
-    // score = calcScore();
+    int start2goal = dir_[sp.id2()][gp.id2()];
+    Pos nsp = sp.to(start2goal);
+    start = nsp.id3();
+    bgridgoal = grid[bgoal];
+    grid[bgoal] = bstart;
+    // vector<int> ndice(6);
+    // REP(i,6) {
+    //   ndice[i] = dice[dice_[d_(nsp.id3())][i]];
+    // }
+    // dice = ndice;
+    // REP(i,6) { cerr << dice[i]; }
+    // cerr << endl;
+    // REP(i,6) { cerr << dice[dice_[d_(sp.id3())][i]]; }
+    // cerr << endl;
+    assert(ok);
+
+    // D4(bstart, start, bgoal, goalI2);
+    score = calcScore();
     return score-bscore;
   }
 
@@ -389,9 +421,10 @@ struct State {
     return sc;
   }
   double update() { 
-    int p = rng.nextInt(N*20);
-    if (p == 0) return update2();
-    if (p == 1) return update3();
+    int p = rng.nextInt(N*100);
+    if (p <= 5) return update2();
+    else if (p <= 10) return update3();
+    else if (p <= 11) return update4();
     return update1();
   }
 
@@ -470,6 +503,7 @@ struct State {
     while (true) {
       int d = dice[dice_[d_(cur)][BOTTOM]];
       int v = grid_[i2_(cur)];
+      // cerr << Pos(cur) << d << v << endl;
       // cerr << cur;
       // REP(i,6) { cerr << dice[dice_[cur.d][i]]; }
       // cerr << " " << d << v << endl;
@@ -479,6 +513,7 @@ struct State {
       if (i2_(nex) == i2_(start)) break;
       cur = nex;
     }
+    // cerr << endl;
     // DEBUG("ok");
     return ret;
   }
@@ -487,6 +522,14 @@ struct State {
     if (btype == 1) revert1();
     else if (btype == 2) revert2();
     else if (btype == 3) revert3();
+    else if (btype == 4) revert4();
+  }
+
+  void revert4() {
+    score = bscore;
+    start = bstart;
+    goalI2 = bgoal;
+    grid[goalI2] = bgridgoal;
   }
 
   void revert3() {
@@ -520,7 +563,7 @@ struct State {
   } // update()適用前の状態に戻す.
 
   void write() {
-    REP(i,6) cout << dice[i] << '\n';
+    REP(i,6) cout << dice[dice_[d_(start)][i]] << '\n';
 
     int n = size();
     cout << size() << '\n';
@@ -631,8 +674,8 @@ void initState(State &s) {
 struct SASolver {
   double startTemp = 3;
   double endTemp = 0.001;
-  Timer timer = Timer(2.85);
-  // Timer timer = Timer(9.55);
+  // Timer timer = Timer(2.85);
+  Timer timer = Timer(9.55);
   // Timer timer = Timer(29.55);
   State best;
   SASolver() { init(); }
@@ -706,8 +749,6 @@ struct Solver {
         SASolver s;
         s.solve(state);
         s.best.write();
-        show(s.best.grid);
-        s.best.update4();
         // show(s.best.grid);
         int score = s.best.calcScore();
         cerr << "score=" << score << " " << score*B << endl;
