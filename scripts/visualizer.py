@@ -40,6 +40,12 @@ class Input:
                 row = [ri(f) for c in range(self.N)]
                 self.grid.append(row)
             # self.show()
+        self.count = [0 for _ in range(10)]
+        for r in range(self.N):
+            for c in range(self.N):
+                v = self.grid[r][c]
+                if v < 0: continue
+                self.count[v] += 1
     
     def show(self):
         for r in range(self.N):
@@ -161,11 +167,14 @@ class Output:
 
     def calcScore(self, input: Input):
         ret = 0
+        self.count = [0 for _ in range(10)] # 一致した数
         for i, move in enumerate(self.moves):
             d = self.getBottom(i)
             v = input.grid[move.y][move.x]
             if abs(v) == d:
                 ret += v
+                if v > 0:
+                    self.count[v] += 1
         self.score = ret
         return ret
 
@@ -281,6 +290,15 @@ class Application(tkinter.Frame):
         cur = self.output.get()
         self.infoCanvas.create_text(0, h, text=f"dice = {''.join(map(str,cur.dice))}", **option)
         h += 15
+
+        vmin = max(1,self.input.V-6)
+        ac_str = f"{vmin}["
+        for i in range(vmin, self.input.V+1):
+            ac_str += f"{cur.count[i]}/{self.input.count[i]},"
+        ac_str += f"]{self.input.V}"
+        self.infoCanvas.create_text(0, h, text=f"fill = {ac_str}", **option)
+        h += 15
+
         self.infoCanvas.create_text(0, h, text=f"score = {cur.score} ({cur.score*self.input.B:.1f})", **option)
 
     def create_widgets(self):
@@ -309,7 +327,7 @@ class Application(tkinter.Frame):
         self.last_button.bind('<Button-1>', self.last)
 
 
-        self.infoCanvas = tk.Canvas(self, width = 200, height = 100)
+        self.infoCanvas = tk.Canvas(self, width = 400, height = 100)
         self.infoCanvas.grid(row=0, column=1, columnspan=5)
     
     def next(self, event):

@@ -427,8 +427,8 @@ struct State {
   double update() { 
     int p = rng.nextInt(N*100);
     if (p <= 5) return update2();
-    else if (p <= 10) return update3();
-    else if (p <= 20) return update4();
+    if (p <= 10) return update3();
+    if (p <= 20) return update4();
     return update1();
   }
 
@@ -589,12 +589,6 @@ void initState(State &s) {
   s.dice[4] = V-1;
   if (V > 4) s.dice[5] = V-3;
   else s.dice[5] = V-2;
-  // s.dice[0] = 2;
-  // s.dice[1] = 3;
-  // s.dice[2] = 3;
-  // s.dice[3] = 2;
-  // s.dice[4] = 2;
-  // s.dice[5] = 1;
   // REP(i,6) {
   //   // s.dice[i] = v;
   //   // --v;
@@ -708,7 +702,7 @@ struct SASolver {
         {
           if (best.score < state.score) {
             best = state;
-            // cerr << "time = " << t << ", counter = " << counter << ", score = " << best.score << '\n';
+            cerr << "time = " << t << ", counter = " << counter << ", score = " << best.score << '\n';
             // best.write();
           }
         }
