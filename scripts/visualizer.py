@@ -195,6 +195,12 @@ class Outputs:
     def prev(self):
         self.oid = max(0, self.oid-1)
 
+    def first(self):
+        self.oid = 0
+
+    def last(self):
+        self.oid = len(self.outputs)-1
+
 
 class Application(tkinter.Frame):
     def __init__(self, master=None):
@@ -282,21 +288,29 @@ class Application(tkinter.Frame):
         self.canvas.grid(row=0, column=0, rowspan=3)
         self.canvas.update()
 
+        self.first_button = tkinter.ttk.Button(self, text='<<')
+        self.first_button.grid(row=1, column=1)
+        self.first_button.bind('<Button-1>', self.first)
+
         self.prev_button = tkinter.ttk.Button(self, text='<')
-        self.prev_button.grid(row=1, column=1)
+        self.prev_button.grid(row=1, column=2)
         self.prev_button.bind('<Button-1>', self.prev)
 
         self.run_button = tkinter.ttk.Button(self, text='r')
-        self.run_button.grid(row=1, column=2)
+        self.run_button.grid(row=1, column=3)
         self.run_button.bind('<Button-1>', self.run)
 
         self.next_button = tkinter.ttk.Button(self, text='>')
-        self.next_button.grid(row=1, column=3)
+        self.next_button.grid(row=1, column=4)
         self.next_button.bind('<Button-1>', self.next)
+
+        self.last_button = tkinter.ttk.Button(self, text='>>')
+        self.last_button.grid(row=1, column=5)
+        self.last_button.bind('<Button-1>', self.last)
 
 
         self.infoCanvas = tk.Canvas(self, width = 200, height = 100)
-        self.infoCanvas.grid(row=0, column=1)
+        self.infoCanvas.grid(row=0, column=1, columnspan=5)
     
     def next(self, event):
         self.output.next()
@@ -310,6 +324,14 @@ class Application(tkinter.Frame):
 
     def prev(self, event):
         self.output.prev()
+        self.draw()
+
+    def last(self, event):
+        self.output.last()
+        self.draw()
+
+    def first(self, event):
+        self.output.first()
         self.draw()
 
 
