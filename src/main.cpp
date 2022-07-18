@@ -282,6 +282,7 @@ struct State {
     Pos gp(goalI2%N, goalI2/N);
     Pos sp(start);
     Pos bp;
+    int goal;
     REP(dir,4) {
       int bx = gp.x+DX[dir];
       int by = gp.y+DY[dir];
@@ -291,6 +292,7 @@ struct State {
       // cerr << bp << Pos(grid[bid]) << gp << endl;
       if (i2_(grid[bid]) == goalI2) {
         // cerr << bp << gp << endl;
+        goal = grid[bid];
         break;
       }
     }
@@ -311,6 +313,15 @@ struct State {
     start = nsp.id3();
     bgridgoal = grid[bgoal];
     grid[bgoal] = bstart;
+
+    int diff = 0;
+    // 変更前のgoal地点のscore
+    int dbef = dice[dice_[d_(goal)][BOTTOM]];
+    int v = grid_[i2_(goal)];
+    if (abs(v) == dbef) diff -= v;
+    int daft = dice[dice_[d_(start)][BOTTOM]];
+    if (abs(v) == daft) diff += v;
+    
     // vector<int> ndice(6);
     // REP(i,6) {
     //   ndice[i] = dice[dice_[d_(nsp.id3())][i]];
@@ -323,8 +334,10 @@ struct State {
     assert(ok);
 
     // D4(bstart, start, bgoal, goalI2);
-    score = calcScore();
-    return score-bscore;
+    // score = calcScore();
+    // assert(diff == score-bscore);
+    score += diff;
+    return diff;
   }
 
   int update3() {
@@ -424,7 +437,7 @@ struct State {
     int p = rng.nextInt(N*100);
     if (p <= 5) return update2();
     else if (p <= 10) return update3();
-    else if (p <= 11) return update4();
+    else if (p <= 20) return update4();
     return update1();
   }
 
@@ -706,7 +719,7 @@ struct SASolver {
         {
           if (best.score < state.score) {
             best = state;
-            cerr << "time = " << t << ", counter = " << counter << ", score = " << best.score << '\n';
+            // cerr << "time = " << t << ", counter = " << counter << ", score = " << best.score << '\n';
             // best.write();
           }
         }
