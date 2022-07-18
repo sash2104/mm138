@@ -181,7 +181,7 @@ vector<vector<int>> orders_ = {
 static constexpr short TOP = 0;
 static constexpr short BOTTOM = 1;
 
-int to_[30*30*24][4];
+int to_[30*30*32][4];
 int dist_[30*30][30*30];
 int dir_[30*30][30*30];
 int y_(int id3) { return id3/(24*N); }
@@ -710,7 +710,7 @@ struct Solver {
 };
 
 void initPos() {
-  REP(i,30*30*24) REP(dir,4) to_[i][dir] = -1;
+  REP(i,30*30*32) REP(dir,4) to_[i][dir] = -1;
   REP(i,30*30) REP(j,30*30) dist_[i][j] = INF;
   REP(i,30*30) REP(j,30*30) dir_[i][j] = -1;
   REP(y,N) REP(x,N) {
