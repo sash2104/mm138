@@ -184,10 +184,14 @@ static constexpr short BOTTOM = 1;
 int to_[30*30*24][4];
 int dist_[30*30][30*30];
 int dir_[30*30][30*30];
+int y_(int id3) { return id3/(24*N); }
+int x_(int id3) { return (id3/24)%N; }
+int d_(int id3) { return id3%24; }
 
 struct Pos {
   short x = -1, y = -1, d = -1;
   Pos() {}
+  Pos(int i): x(x_(i)), y(y_(i)), d(d_(i)) {}
   Pos(short x, short y): x(x), y(y) {}
   Pos(short x, short y, short d): x(x), y(y), d(d) {}
   bool eq(const Pos &other) const {
@@ -231,20 +235,21 @@ bool outside(const Pos &p) {
   return false;
 }
 // update(), calcScore(), revert(), write()を実装する
-using grid_t = vector<vector<Pos>>;
+// using grid_t = vector<vector<Pos>>;
+using grid_t = vector<vector<int>>;
 
 static constexpr int MAX_DEPTH = 15;
 vector<char> dir2c = {'A', 'v', '<', '>'};
 void show(const grid_t &grid) {
   REP(y,N) {
     REP(x,N) {
-      Pos cur(x,y);
-      const Pos &nex = grid[y][x];
-      if (nex.x == -1) {
+      int cur = Pos(x,y).id2();
+      int nex = grid[y][x];
+      if (nex == -1) {
         cerr << '.';
         continue;
       }
-      int dir = getDir(cur, nex);
+      int dir = dir_[cur][nex/24];
       cerr << dir2c[dir];
     }
     cerr << '\n';
@@ -254,18 +259,19 @@ void show(const grid_t &grid) {
 
 struct State {
   vector<int> dice;
-  Pos start, goal;
+  // Pos start, goal;
+  int start, goal;
   grid_t grid;
   int score = -INF;
   // backup
-  vector<Pos> bpos;
+  vector<int> bpos;
   int bscore;
   int blen;
-  Pos bsrc, btarget;
+  int bsrc, btarget;
   int bx, by;
   int btype;
   int bdid, bv;
-  State(): dice(6), grid(N,vector<Pos>(N)), bpos(MAX_DEPTH+1) {}
+  State(): dice(6), grid(N,vector<int>(N,-1)), bpos(MAX_DEPTH+1) {}
   int update2() {
     // diceの数字変更
     btype = 2;
@@ -284,22 +290,23 @@ struct State {
     return score-bscore;
   }
 
-  int clear(const Pos &src, int *len, Pos &target) {
+  int clear(int src, int *len, int *target) {
     // clearすることにより減るスコアを返す
     int ret = 0;
-    Pos cur = src;
+    int cur = src;
     REP(i,*len) {
-      Pos nex = grid[cur.y][cur.x];
-      // cerr << cur << nex << start << goal << endl;
+      int nex = grid[y_(cur)][x_(cur)];
+      assert(nex != -1);
+      // cerr << Pos(cur) << Pos(nex) << Pos(start) << Pos(goal) << endl;
       bpos[i] = nex;
-      target = nex;
-      int d = dice[dice_[cur.d][BOTTOM]];
-      int v = grid_[cur.y][cur.x];
+      *target = nex;
+      int d = dice[dice_[d_(cur)][BOTTOM]];
+      int v = grid_[y_(cur)][x_(cur)];
       if (abs(v) == d) ret -= v;
-      // cerr << "[cl]" << cur << nex << d << v << endl;
-      grid[cur.y][cur.x] = Pos();
+      // cerr << "[cl]" << Pos(cur) << Pos(nex) << endl;
+      grid[y_(cur)][x_(cur)] = -1;
       // cerr << i << cur << nex << endl;
-      if (nex.eq(goal)) {
+      if (nex/24 == goal/24) {
         *len = i+1;
         break;
       }
@@ -313,15 +320,16 @@ struct State {
     int len = rng.nextInt(3,MAX_DEPTH-2);
     int x = rng.nextInt(N);
     int y = rng.nextInt(N);
-    while(empty(x, y) || Pos(x,y).eq(goal) || grid[y][x].eq(goal)) {
+    while(empty(x, y) || Pos(x,y).id2() == goal/24 || grid[y][x]/24 == goal/24) {
       x = rng.nextInt(N);
       y = rng.nextInt(N);
     }
     bx = x; by = y;
-    Pos cur = grid[y][x];
+    int cur = grid[y][x];
     bsrc = cur;
-    Pos target;
-    int diff1 = clear(cur, &len, target);
+    int target;
+    int diff1 = clear(cur, &len, &target);
+    // cerr << Pos(x,y) << "->" << Pos(x_(cur), y_(cur)) << "->" << Pos(x_(target), y_(target)) << endl;
     blen = len;
     bscore = score;
     btarget = target;
@@ -355,17 +363,16 @@ struct State {
   }
 
   bool empty(int x, int y) const {
-    return grid[y][x].x == -1;
+    return grid[y][x] == -1;
   }
 
-  bool empty(const Pos &p) const {
-    return grid[p.y][p.x].x == -1;
+  bool empty(int p) const {
+    return grid[y_(p)][x_(p)] == -1;
   }
 
-  int dfs(const Pos &cur, const Pos &src, const Pos &target, int depth) {
+  int dfs(int cur, int src, int target, int depth) {
     if (!empty(cur)) {
       if (cur == target) {
-        assert(!empty(cur));
         // Pos fr = src;
         // while(true) {
         //   Pos nex = grid[fr.y][fr.x];
@@ -380,39 +387,17 @@ struct State {
       return -1;
     }
     // targetにたどり着けない場合は枝刈り
-    if (cur.distance(target) > MAX_DEPTH-depth) return -1;
-
-    // vector<pair<double,int>> scores;
-    // REP(dir,4) {
-    //   Pos nex = cur.to(dir);
-    //   if (outside(nex)) continue;
-    //   if (!empty(cur) && cur != target) continue;
-    //   // 距離の近さ+乱数をスコアとしスコアの小さいところを優先して選ぶ
-    //   // cerr << dir << target << nex << endl;
-    //   // scores.emplace_back(nex.distance(target)+rng.nextDouble()*2, dir);
-
-    //   // 完全ランダム
-    //   scores.emplace_back(rng.nextDouble(), dir);
-    // }
-    // sort(ALL(scores));
-    // for (auto it: scores) {
-    //   int dir = it.second;
-    //   Pos nex = cur.to(dir);
-    //   if (outside(nex)) continue;
-    //   grid[cur.y][cur.x] = nex;
-    //   int ret = dfs(nex, src, target, depth+1);
-    //   if (ret != -1) return ret;
-    //   grid[cur.y][cur.x] = Pos();
-    // }
+    if (dist_[cur/24][target/24] > MAX_DEPTH-depth) return -1;
 
     int oid = rng.nextInt(24);
     for (int dir: orders_[oid]) {
-      Pos nex = cur.to(dir);
-      if (outside(nex)) continue;
-      grid[cur.y][cur.x] = nex;
+      int nex = to_[cur][dir];
+      if (nex == -1) continue; // outside
+      assert(grid[y_(cur)][x_(cur)] == -1);
+      grid[y_(cur)][x_(cur)] = nex;
       int ret = dfs(nex, src, target, depth+1);
       if (ret != -1) return ret;
-      grid[cur.y][cur.x] = Pos();
+      grid[y_(cur)][x_(cur)] = -1;
     }
     return -1;
   }
@@ -420,50 +405,52 @@ struct State {
   int size() {
     // 輪の長さ
     int len = 0;
-    Pos cur = start;
+    int cur = start;
     while (true) {
       ++len;
-      Pos nex = grid[cur.y][cur.x];
-      if (nex.eq(start)) break;
+      int nex = grid[y_(cur)][x_(cur)];
+      assert(nex != -1);
+      if (nex/24 == start/24) break;
       cur = nex;
     }
     return len; 
   }
 
-  int calcDiffScore(const Pos &src, const Pos &target) {
+  int calcDiffScore(int src, int target) {
     int ret = 0;
-    Pos cur = src;
+    int cur = src;
     while (true) {
-      assert(cur.d != -1);
-      int d = dice[dice_[cur.d][BOTTOM]];
-      int v = grid_[cur.y][cur.x];
+      int d = dice[dice_[d_(cur)][BOTTOM]];
+      int v = grid_[y_(cur)][x_(cur)];
       // REP(i,6) { cerr << dice[dice_[cur.d][i]]; }
       if (abs(v) == d) ret += v;
-      Pos nex = grid[cur.y][cur.x];
+      int nex = grid[y_(cur)][x_(cur)];
+      assert(nex != -1);
       // cerr << "[ad]" <<  cur << nex << d << v << endl;
-      if (nex.eq(target)) break;
+      if (nex/24 == target/24) break;
       cur = nex;
     }
     return ret;
   }
 
   int calcScore() { 
+    // DEBUG("ok");
     int ret = 0;
-    Pos cur = start;
+    int cur = start;
     // show(grid);
     while (true) {
-      assert(cur.d != -1);
-      int d = dice[dice_[cur.d][BOTTOM]];
-      int v = grid_[cur.y][cur.x];
+      int d = dice[dice_[d_(cur)][BOTTOM]];
+      int v = grid_[y_(cur)][x_(cur)];
       // cerr << cur;
       // REP(i,6) { cerr << dice[dice_[cur.d][i]]; }
       // cerr << " " << d << v << endl;
       if (abs(v) == d) ret += v;
-      Pos nex = grid[cur.y][cur.x];
-      if (nex.eq(start)) break;
-      int dir = getDir(cur, nex);
+      int nex = grid[y_(cur)][x_(cur)];
+      assert(nex != -1);
+      if (nex/24 == start/24) break;
       cur = nex;
     }
+    // DEBUG("ok");
     return ret;
   }
 
@@ -479,20 +466,19 @@ struct State {
 
   void revert1() {
     // show(grid);
-    Pos cur = bsrc;
+    int cur = bsrc;
     while (true) {
-      assert(cur.x != -1);
-      Pos nex = grid[cur.y][cur.x];
-      grid[cur.y][cur.x] = Pos();
-      if (nex.x == -1) break;
+      Pos p(cur);
+      int nex = grid[y_(cur)][x_(cur)];
+      grid[y_(cur)][x_(cur)] = -1;
+      if (nex == -1) break;
       if (nex == btarget) break;
       cur = nex;
     }
     cur = bsrc;
     REP(i,blen) {
       // cerr << i << cur << bpos[i] << endl;
-      assert(cur.x != -1);
-      grid[cur.y][cur.x] = bpos[i];
+      grid[y_(cur)][x_(cur)] = bpos[i];
       cur = bpos[i];
     }
     score = bscore;
@@ -504,12 +490,12 @@ struct State {
 
     int n = size();
     cout << size() << '\n';
-    Pos cur = start;
+    int cur = start;
     REP(i,n) {
-      cout << cur.y << " " << cur.x << '\n';
-      Pos nex = grid[cur.y][cur.x];
-      if (i == n-1) assert(nex.eq(start));
-      else assert(!nex.eq(start));
+      cout << y_(cur) << " " << x_(cur) << '\n';
+      int nex = grid[y_(cur)][x_(cur)];
+      // if (i == n-1) assert(nex.eq(start));
+      // else assert(!nex.eq(start));
       cur = nex;
     }
   } // 現在の状態を出力する.
@@ -530,75 +516,77 @@ void initState(State &s) {
   //   // if (v <= 0) v = V;
   //   s.dice[i] = V-i%3;
   // }
-  s.start = Pos(0,0,0);
-  Pos cur = s.start;
+  s.start = Pos(0,0,0).id3();
+  int cur = s.start;
   for (int dir: {RIGHT, DOWN, LEFT, UP}) {
     REP(i,N) {
-      Pos nex = cur.to(dir);
-      if (outside(nex)) break;
-      s.grid[cur.y][cur.x] = nex;
+      int nex = to_[cur][dir];
+      Pos p(x_(cur),y_(cur));
+      Pos np(x_(nex),y_(nex));
+      if (nex == -1) break; // outside
+      s.grid[y_(cur)][x_(cur)] = nex;
       s.goal = cur;
-      if (!s.empty(nex)) break;
+      if (s.grid[y_(nex)][x_(nex)] != -1) break; // not empty
       cur = nex;
     }
   }
   s.score = s.calcScore();
 }
 
-void initState2(State &s) {
-  int v = V;
-  REP(i,6) {
-    // s.dice[i] = v;
-    // --v;
-    // if (v <= 0) v = V;
-    s.dice[i] = V-i%3;
-  }
-  int cx = N/2;
-  int cy = N/2;
-  s.start = Pos(cx-2,cy-2,0);
-  Pos cur = s.start;
-  for (int dir: {RIGHT, DOWN, LEFT, UP}) {
-    REP(i,3) {
-      Pos nex = cur.to(dir);
-      if (outside(nex)) break;
-      s.grid[cur.y][cur.x] = nex;
-      s.goal = cur;
-      if (!s.empty(nex)) break;
-      cur = nex;
-    }
-  }
-  s.score = s.calcScore();
-}
+// void initState2(State &s) {
+//   int v = V;
+//   REP(i,6) {
+//     // s.dice[i] = v;
+//     // --v;
+//     // if (v <= 0) v = V;
+//     s.dice[i] = V-i%3;
+//   }
+//   int cx = N/2;
+//   int cy = N/2;
+//   s.start = Pos(cx-2,cy-2,0);
+//   Pos cur = s.start;
+//   for (int dir: {RIGHT, DOWN, LEFT, UP}) {
+//     REP(i,3) {
+//       Pos nex = cur.to(dir);
+//       if (outside(nex)) break;
+//       s.grid[cur.y][cur.x] = nex;
+//       s.goal = cur;
+//       if (!s.empty(nex)) break;
+//       cur = nex;
+//     }
+//   }
+//   s.score = s.calcScore();
+// }
 
-void initState3(State &s) {
-  int v = V;
-  s.dice[0] = V;
-  s.dice[1] = V-1;
-  s.dice[2] = V;
-  s.dice[3] = V-1;
-  s.dice[4] = V-2;
-  if (V > 4) s.dice[5] = V-3;
-  else s.dice[5] = V-2;
-  // REP(i,6) {
-  //   // s.dice[i] = v;
-  //   // --v;
-  //   // if (v <= 0) v = V;
-  //   s.dice[i] = V-i%3;
-  // }
-  s.start = Pos(N/2,0,0);
-  Pos cur = s.start;
-  for (int dir: {RIGHT, DOWN, LEFT, UP, RIGHT}) {
-    REP(i,N) {
-      Pos nex = cur.to(dir);
-      if (outside(nex)) break;
-      s.grid[cur.y][cur.x] = nex;
-      s.goal = cur;
-      if (!s.empty(nex)) break;
-      cur = nex;
-    }
-  }
-  s.score = s.calcScore();
-}
+// void initState3(State &s) {
+//   int v = V;
+//   s.dice[0] = V;
+//   s.dice[1] = V-1;
+//   s.dice[2] = V;
+//   s.dice[3] = V-1;
+//   s.dice[4] = V-2;
+//   if (V > 4) s.dice[5] = V-3;
+//   else s.dice[5] = V-2;
+//   // REP(i,6) {
+//   //   // s.dice[i] = v;
+//   //   // --v;
+//   //   // if (v <= 0) v = V;
+//   //   s.dice[i] = V-i%3;
+//   // }
+//   s.start = Pos(N/2,0,0);
+//   Pos cur = s.start;
+//   for (int dir: {RIGHT, DOWN, LEFT, UP, RIGHT}) {
+//     REP(i,N) {
+//       Pos nex = cur.to(dir);
+//       if (outside(nex)) break;
+//       s.grid[cur.y][cur.x] = nex;
+//       s.goal = cur;
+//       if (!s.empty(nex)) break;
+//       cur = nex;
+//     }
+//   }
+//   s.score = s.calcScore();
+// }
 
 struct SASolver {
   double startTemp = 3;
@@ -659,7 +647,7 @@ struct Solver {
         State state; // 開始状態
         initState(state);
         // initState3(state);
-        // show(state.grid);
+        show(state.grid);
         // return;
 
         // REP(i,100) {
@@ -737,13 +725,17 @@ void initPos() {
     REP(d,24) {
       p.d = d;
       int id3 = p.id3();
+      assert(y_(id3) == y);
+      assert(x_(id3) == x);
+      assert(d_(id3) == d);
       REP(dir,4) {
         Pos np = p.to(dir);
+        if (outside(np)) continue;
         to_[id3][dir] = np.id3();
       }
     }
     REP(ny,N) REP(nx,N) {
-      Pos np(ny,nx,0);
+      Pos np(nx,ny,0);
       int nid2 = np.id2();
       dist_[id2][nid2] = p.distance(np);
       dir_[id2][nid2] = getDir(p,np);
