@@ -636,7 +636,7 @@ void initState(State &s) {
   s.start = Pos(0,0,0).id3();
   int cur = s.start;
   for (int dir: {RIGHT, DOWN, LEFT, UP}) {
-    REP(i,N) {
+    REP(i,N-2+N%2) { // start, goalをつなげるために偶数で1ひく
       int nex = to_[cur][dir];
       Pos p(x_(cur),y_(cur));
       Pos np(x_(nex),y_(nex));
@@ -647,6 +647,7 @@ void initState(State &s) {
       cur = nex;
     }
   }
+  assert(s.start == s.grid[s.goalI2]);
   s.score = s.calcScore();
 }
 
@@ -723,6 +724,7 @@ struct SASolver {
     int counter = 0;
     vector<int> total(6);
     vector<int> ac(6);
+    // best.write();
     while ((t = timer.get()) < timer.LIMIT) // 焼きなまし終了時刻までループ
     {
       double T = startTemp + (endTemp - startTemp) * t / timer.LIMIT;
@@ -744,7 +746,7 @@ struct SASolver {
           ac[state.btype]++;
           if (best.score < state.score) {
             best = state;
-            cerr << "time = " << t << ", counter = " << counter << ", score = " << best.score << '\n';
+            // cerr << "time = " << t << ", counter = " << counter << ", score = " << best.score << '\n';
             // best.write();
           }
         }
