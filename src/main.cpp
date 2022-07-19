@@ -721,11 +721,14 @@ struct SASolver {
     double t;
     best = state;
     int counter = 0;
+    vector<int> total(6);
+    vector<int> ac(6);
     while ((t = timer.get()) < timer.LIMIT) // 焼きなまし終了時刻までループ
     {
       double T = startTemp + (endTemp - startTemp) * t / timer.LIMIT;
       for (int i = 0; i < 100; ++i) { // 時間計算を間引く
         double diff = state.update();
+        total[state.btype]++;
         if (diff <= -INF+0.1) {
           state.revert();
           continue;
@@ -738,6 +741,7 @@ struct SASolver {
         // cerr << t << " " << T << " " << tr << " " << diff << endl;
         if (diff >= tr)
         {
+          ac[state.btype]++;
           if (best.score < state.score) {
             best = state;
             cerr << "time = " << t << ", counter = " << counter << ", score = " << best.score << '\n';
@@ -749,6 +753,9 @@ struct SASolver {
       }
     }
     cerr << "counter = " << counter << ", score = " << best.score << " " << best.calcScore() << endl;
+    REP3(i,1,6) {
+      cerr << i << ":" << 1.0*ac[i]/total[i] << "(" << ac[i] << "/" << total[i] << ")" << endl;
+    }
   }
 };
 
