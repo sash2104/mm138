@@ -457,8 +457,8 @@ struct State {
     int p = rng.nextInt(N*100);
     if (p <= 5) return update2();
     if (p <= 10) return update3();
-    if (p <= 20) return update4();
-    if (p <= 30) return update5();
+    if (p <= 110) return update4();
+    if (p <= 220) return update5();
     return update1();
   }
 
@@ -745,7 +745,7 @@ struct SASolver {
           ac[state.btype]++;
           if (best.score < state.score) {
             best = state;
-            cerr << "time = " << t << ", counter = " << counter << ", score = " << best.score << '\n';
+            // cerr << "time = " << t << ", counter = " << counter << ", score = " << best.score << '\n';
             // best.write();
           }
         }
