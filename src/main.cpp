@@ -87,6 +87,7 @@ struct Timer {
 int N, V;
 double B;
 int grid_[30*30];
+int ncount_[10]; // ncount_[i]:=数字iがgrid_に何回登場するか
 
 vector<vector<int>> dice_ = {
 {0,1,2,3,4,5},
@@ -374,6 +375,63 @@ struct State {
     return score-bscore;
   }
 
+  int update6() {
+    // diceの数字変更。見込みのあるもののみ選ぶ
+    btype = 2;
+    int did = rng.nextInt(6);
+    bv = dice[did];
+    int vmin = max(1, V-4);
+    int v = rng.nextInt(vmin, V-1);
+    if (v >= bv) v += 1;
+    bscore = score;
+    bdid = did;
+    // calc score
+    vector<int> used(10);
+    int used2 = 0; // dice[did]が使われた回数
+    {
+      int cur = start;
+      // show(grid);
+      while (true) {
+        int cur_did = dice_[d_(cur)][BOTTOM];
+        int d = dice[cur_did];
+        int v = grid_[i2_(cur)];
+        // cerr << Pos(cur) << d << v << endl;
+        // cerr << cur;
+        // REP(i,6) { cerr << dice[dice_[cur.d][i]]; }
+        // cerr << " " << d << v << endl;
+        if (abs(v) == d)  {
+          if (cur_did == did) used2++;
+          used[d]++;
+        }
+        int nex = grid[i2_(cur)];
+        assert(nex != -1);
+        if (i2_(nex) == i2_(start)) break;
+        cur = nex;
+      }
+    }
+    int bestV = -1;
+    int bestScore = -INF;
+    int remain = ncount_[bv]-used[bv];
+    REP3(v,1,V+1) {
+      if (v == bv) continue;
+      int curRemain = ncount_[v]-used[v];
+      int curScore = curRemain*v-remain*bv;
+      if (curScore > bestScore) {
+        bestScore = curScore;
+        bestV = v;
+      }
+    }
+    assert(bestV != -1);
+    // return (score-bscore)/(N*N*0.8);
+    // return score-bscore;
+    dice[did] = bestV;
+    score = calcScore();
+    // if (bestScore >= 0) {
+    //   cerr << score-bscore << " " << bestScore << " " << bv << " " << v << endl;
+    // }
+    return score-bscore + 0.5*bestScore;
+  }
+
   int update2() {
     // diceの数字変更
     btype = 2;
@@ -457,7 +515,7 @@ struct State {
   }
   double update() { 
     int p = rng.nextInt(N*100);
-    if (p <= 5) return update2();
+    if (p <= 5) return update6();
     if (p <= 10) return update3();
     if (p <= 110) return update4();
     if (p <= 220) return update5();
@@ -620,15 +678,15 @@ struct State {
   } // 現在の状態を出力する.
 };
 
-void initState(State &s) {
+void initState(State &s, vector<int> dice) {
   int v = V;
-  s.dice[0] = V;
-  s.dice[1] = V-1;
-  s.dice[2] = V;
-  s.dice[3] = V-2;
-  s.dice[4] = V-1;
-  if (V > 4) s.dice[5] = V-3;
-  else s.dice[5] = V-2;
+  s.dice = dice;
+  // s.dice[0] = V;
+  // s.dice[1] = V-1;
+  // s.dice[2] = V;
+  // s.dice[3] = V-2;
+  // s.dice[4] = V-1;
+  // s.dice[5] = max(2,V-3);
   // REP(i,6) {
   //   // s.dice[i] = v;
   //   // --v;
@@ -762,6 +820,12 @@ struct SASolver {
   }
 };
 
+vector<vector<int>> dices_ = {
+  {V,V-1,V,V-2,V-1,max(2,V-3)},
+  {V,V-1,V,V-2,max(2,V-4),max(2,V-3)},
+  {V,V,V-1,V-1,V-2,V-2},
+};
+
 struct Solver {
     int turn_ = 0;
     Solver() {
@@ -772,7 +836,7 @@ struct Solver {
 
     void solve() {
         State state; // 開始状態
-        initState(state);
+        initState(state,{V,V-1,V,V-2,V-1,max(2,V-3)});
         // REP(i,50) {
         // state.update5();
         // }
@@ -796,6 +860,13 @@ struct Solver {
       REP(r,N) REP(c,N) {
         cin >> grid_[r*N+c];
       }
+      REP(i,10) ncount_[i] = 0;
+      REP(r,N) REP(c,N) {
+        int did = grid_[r*N+c]; 
+        if (did < 0) continue;
+        ncount_[did]++;
+      }
+      // REP(i,10) cerr << i << " " << ncount_[i] << endl;
     }
 
 };
