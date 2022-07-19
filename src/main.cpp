@@ -272,93 +272,37 @@ struct State {
   int bid;
   int btype;
   int bdid, bv;
-  int bstart, bgoal, bgridgoal, bgridstart;
+  int bstart;
   State(): dice(6), grid(N*N,-1), bpos(MAX_DEPTH+1) {}
 
-  int update5() {
-    // startを前ににずらす
-    btype = 5;
-    bscore = score;
-    Pos sp(start);
-    Pos gp(goalI2%N, goalI2/N);
-    bstart = start;
-    bgoal = goalI2;
-    goalI2 = sp.id2();
-    bgridstart = grid[goalI2];
-    start = grid[goalI2];
-    // cerr << Pos(start) << bp << endl;
+  // int update5() {
+  //   // startを前ににずらす
+  //   btype = 5;
+  //   bscore = score;
+  //   Pos sp(start);
+  //   Pos gp(goalI2%N, goalI2/N);
+  //   bstart = start;
+  //   bgoal = goalI2;
+  //   goalI2 = sp.id2();
+  //   bgridstart = grid[goalI2];
+  //   start = grid[goalI2];
+  //   // cerr << Pos(start) << bp << endl;
 
-    int goal2start = dir_[goalI2][i2_(start)];
-    grid[goalI2] = to_[grid[bgoal]][goal2start];
+  //   int goal2start = dir_[goalI2][i2_(start)];
+  //   grid[goalI2] = to_[grid[bgoal]][goal2start];
 
-    int diff = 0;
-    // 変更前のgoal地点のscore
-    int dbef = dice[dice_[d_(bstart)][BOTTOM]];
-    int v = grid_[goalI2];
-    if (abs(v) == dbef) diff -= v;
-    int daft = dice[dice_[d_(grid[bgoal])][BOTTOM]];
-    if (abs(v) == daft) diff += v;
-    // cerr << v << dbef << daft << endl;
+  //   int diff = 0;
+  //   // 変更前のgoal地点のscore
+  //   int dbef = dice[dice_[d_(bstart)][BOTTOM]];
+  //   int v = grid_[goalI2];
+  //   if (abs(v) == dbef) diff -= v;
+  //   int daft = dice[dice_[d_(grid[bgoal])][BOTTOM]];
+  //   if (abs(v) == daft) diff += v;
+  //   // cerr << v << dbef << daft << endl;
     
-    score += diff;
-    return diff;
-  }
-
-  int update4() {
-    // startをgoal方向ににずらす
-    btype = 4;
-    bscore = score;
-    Pos gp(goalI2%N, goalI2/N);
-    Pos sp(start);
-    Pos bp;
-    int goal;
-    REP(dir,4) {
-      int bx = gp.x+DX[dir];
-      int by = gp.y+DY[dir];
-      bp = Pos(bx,by);
-      if (outside(bp)) continue;
-      int bid = bp.id2();
-      // cerr << bp << Pos(grid[bid]) << gp << endl;
-      if (i2_(grid[bid]) == goalI2) {
-        // cerr << bp << gp << endl;
-        goal = grid[bid];
-        break;
-      }
-    }
-    bstart = start;
-    bgoal = goalI2;
-    int id;
-    bool ok = false;
-    int goal2start = dir_[gp.id2()][sp.id2()];
-    REP(d,24) {
-      id = Pos(gp.x,gp.y,d).id3();
-      if (to_[id][goal2start] == start) { ok = true; break; }
-    }
-    // cerr << Pos(start) << bp << endl;
-    goalI2 = bp.id2();
-
-    int start2goal = dir_[sp.id2()][gp.id2()];
-    Pos nsp = sp.to(start2goal);
-    start = nsp.id3();
-    bgridgoal = grid[bgoal];
-    grid[bgoal] = bstart;
-
-    int diff = 0;
-    // 変更前のgoal地点のscore
-    int dbef = dice[dice_[d_(goal)][BOTTOM]];
-    int v = grid_[i2_(goal)];
-    if (abs(v) == dbef) diff -= v;
-    int daft = dice[dice_[d_(start)][BOTTOM]];
-    if (abs(v) == daft) diff += v;
-    
-    assert(ok);
-
-    // D4(bstart, start, bgoal, goalI2);
-    // score = calcScore();
-    // assert(diff == score-bscore);
-    score += diff;
-    return diff;
-  }
+  //   score += diff;
+  //   return diff;
+  // }
 
   int update3() {
     // diceの数字交換
@@ -391,6 +335,7 @@ struct State {
   }
 
   int clear(int src, int *len, int *target) {
+    // show(grid);
     // clearすることにより減るスコアを返す
     int ret = 0;
     int cur = src;
@@ -405,11 +350,11 @@ struct State {
       if (abs(v) == d) ret -= v;
       // cerr << "[cl]" << Pos(cur) << Pos(nex) << endl;
       grid[i2_(cur)] = -1;
-      // cerr << i << cur << nex << endl;
-      if (i2_(nex) == goalI2) {
+      if (nex == src) {
         *len = i+1;
         break;
       }
+      // cerr << i << cur << nex << endl;
       cur = nex;
     }
     return ret;
@@ -419,7 +364,8 @@ struct State {
     btype = 1;
     int len = rng.nextInt(3,MAX_DEPTH-2);
     int id = rng.nextInt(N*N);
-    while(grid[id] == -1 || id == goalI2 || i2_(grid[id]) == goalI2) {
+    // while(grid[id] == -1 || id == goalI2 || i2_(grid[id]) == goalI2) {
+    while(grid[id] == -1) {
       id = rng.nextInt(N*N);
     }
     bid = id;
@@ -431,6 +377,8 @@ struct State {
     blen = len;
     bscore = score;
     btarget = target;
+    bstart = start;
+    start = cur;
     // show(grid);
     // cerr << bsrc << target << endl;
     int len2 = dfs(bsrc, target, i2_(target), 0);
@@ -457,8 +405,7 @@ struct State {
     int p = rng.nextInt(N*100);
     if (p <= 5) return update2();
     if (p <= 10) return update3();
-    if (p <= 20) return update4();
-    if (p <= 30) return update5();
+    // if (p <= 30) return update5();
     return update1();
   }
 
@@ -554,23 +501,23 @@ struct State {
     if (btype == 1) revert1();
     else if (btype == 2) revert2();
     else if (btype == 3) revert3();
-    else if (btype == 4) revert4();
-    else if (btype == 5) revert5();
+    // else if (btype == 4) revert4();
+    // else if (btype == 5) revert5();
   }
 
-  void revert5() {
-    score = bscore;
-    start = bstart;
-    goalI2 = bgoal;
-    grid[i2_(start)] = bgridstart;
-  }
+  // void revert5() {
+  //   score = bscore;
+  //   start = bstart;
+  //   goalI2 = bgoal;
+  //   grid[i2_(start)] = bgridstart;
+  // }
 
-  void revert4() {
-    score = bscore;
-    start = bstart;
-    goalI2 = bgoal;
-    grid[goalI2] = bgridgoal;
-  }
+  // void revert4() {
+  //   score = bscore;
+  //   start = bstart;
+  //   goalI2 = bgoal;
+  //   grid[goalI2] = bgridgoal;
+  // }
 
   void revert3() {
     score = bscore;
@@ -598,6 +545,7 @@ struct State {
       grid[i2_(cur)] = bpos[i];
       cur = bpos[i];
     }
+    start = bstart;
     score = bscore;
     // show(grid);
   } // update()適用前の状態に戻す.
@@ -772,6 +720,14 @@ struct Solver {
     void solve() {
         State state; // 開始状態
         initState(state);
+        // show(state.grid);
+        // REP(i,1000) {
+        // state.update1();
+        // }
+        // show(state.grid);
+        // cerr << state.score*B << " " << state.calcScore()*B << endl;
+        // state.write();
+        // return;
         // REP(i,50) {
         // state.update5();
         // }
