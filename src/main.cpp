@@ -636,7 +636,7 @@ void initState(State &s) {
   s.start = Pos(0,0,0).id3();
   int cur = s.start;
   for (int dir: {RIGHT, DOWN, LEFT, UP}) {
-    REP(i,N) {
+    REP(i,N-N%2-1) {
       int nex = to_[cur][dir];
       Pos p(x_(cur),y_(cur));
       Pos np(x_(nex),y_(nex));
@@ -647,6 +647,7 @@ void initState(State &s) {
       cur = nex;
     }
   }
+  assert(s.grid[s.goalI2] != s.start);
   s.score = s.calcScore();
 }
 
