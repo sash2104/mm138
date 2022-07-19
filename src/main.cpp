@@ -236,8 +236,8 @@ bool outside(const Pos &p) {
   return false;
 }
 // update(), calcScore(), revert(), write()を実装する
-// using grid_t = vector<vector<Pos>>;
-using grid_t = vector<int>;
+// using grid_t = vector<int>;
+using grid_t = int[900];
 
 static constexpr int MAX_DEPTH = 15;
 vector<char> dir2c = {'A', 'v', '<', '>'};
@@ -273,7 +273,9 @@ struct State {
   int btype;
   int bdid, bv;
   int bstart, bgoal, bgridgoal, bgridstart;
-  State(): dice(6), grid(N*N,-1), bpos(MAX_DEPTH+1) {}
+  State(): dice(6), bpos(MAX_DEPTH+1) {
+    REP(i,N*N) grid[i] = -1;
+  }
 
   int update5() {
     // startを前ににずらす
