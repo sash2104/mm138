@@ -240,7 +240,7 @@ bool outside(const Pos &p) {
 // using grid_t = vector<int>;
 using grid_t = int[900];
 
-static constexpr int MAX_DEPTH = 15;
+static constexpr int MAX_DEPTH = 13;
 vector<char> dir2c = {'A', 'v', '<', '>'};
 void show(const grid_t &grid) {
   REP(y,N) {
@@ -369,6 +369,7 @@ struct State {
     int did = rng.nextInt(5);
     bscore = score;
     bdid = did;
+    if (dice[did] == dice[did+1]) return -INF;
     swap(dice[did], dice[did+1]);
     score = calcScore();
     // return (score-bscore)/(N*N*0.8);
@@ -508,12 +509,12 @@ struct State {
     assert(len > 0 && len2 > 0);
     // double sc = 1.0*diff1/len+1.0*diff2/len2;
     double sc = diff1+diff2+(len-len2);
-    // if (sc > 0) {
+    // if (sc > 0 && len < 4) {
     //   D5(diff1, len, diff2, len2, sc);
     // }
     return sc;
   }
-  double update() { 
+  double update(double progress) { 
     int p = rng.nextInt(N*100);
     if (p <= 5) return update6();
     if (p <= 10) return update3();
@@ -787,8 +788,10 @@ struct SASolver {
     while ((t = timer.get()) < timer.LIMIT) // 焼きなまし終了時刻までループ
     {
       double T = startTemp + (endTemp - startTemp) * t / timer.LIMIT;
+      double progress = t/timer.LIMIT;
+      // assert(0 <= progress && progress <= 1);
       for (int i = 0; i < 100; ++i) { // 時間計算を間引く
-        double diff = state.update();
+        double diff = state.update(progress);
         total[state.btype]++;
         if (diff <= -INF+0.1) {
           state.revert();
