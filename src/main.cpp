@@ -14,7 +14,6 @@
 #define ALL(x) std::begin(x), std::end(x)
 using namespace std;
 
-//*********************************  CONSTANTS  **********************************************
 static constexpr int INF = 1<<30;
 
 // #define NDEBUG
@@ -516,10 +515,11 @@ struct State {
   }
   double update(double progress) { 
     int p = rng.nextInt(N*100);
-    if (p <= 5) return update6();
-    if (p <= 10) return update3();
-    if (p <= 110) return update4();
-    if (p <= 220) return update5();
+    if (p <= 100) return update4();
+    if (p <= 200) return update5();
+    if (p <= 200+5) return update6();
+    // if (p <= 200+5) return update2();
+    if (p <= 200+10) return update3();
     return update1();
   }
 
@@ -560,7 +560,7 @@ struct State {
   }
 
   int size() {
-    // 輪の長さ
+    // length of current loop
     int len = 0;
     int cur = start;
     while (true) {
@@ -661,7 +661,7 @@ struct State {
     }
     score = bscore;
     // show(grid);
-  } // update()適用前の状態に戻す.
+  }
 
   void write() {
     REP(i,6) cout << dice[dice_[d_(start)][i]] << '\n';
@@ -676,24 +676,12 @@ struct State {
       // else assert(!nex.eq(start));
       cur = nex;
     }
-  } // 現在の状態を出力する.
+  } // write current solution
 };
 
 void initState(State &s, vector<int> dice) {
   int v = V;
   s.dice = dice;
-  // s.dice[0] = V;
-  // s.dice[1] = V-1;
-  // s.dice[2] = V;
-  // s.dice[3] = V-2;
-  // s.dice[4] = V-1;
-  // s.dice[5] = max(2,V-3);
-  // REP(i,6) {
-  //   // s.dice[i] = v;
-  //   // --v;
-  //   // if (v <= 0) v = V;
-  //   s.dice[i] = V-i%3;
-  // }
   s.start = Pos(0,0,0).id3();
   int cur = s.start;
   for (int dir: {RIGHT, DOWN, LEFT, UP}) {
@@ -711,61 +699,6 @@ void initState(State &s, vector<int> dice) {
   assert(s.grid[s.goalI2] != s.start);
   s.score = s.calcScore();
 }
-
-// void initState2(State &s) {
-//   int v = V;
-//   REP(i,6) {
-//     // s.dice[i] = v;
-//     // --v;
-//     // if (v <= 0) v = V;
-//     s.dice[i] = V-i%3;
-//   }
-//   int cx = N/2;
-//   int cy = N/2;
-//   s.start = Pos(cx-2,cy-2,0);
-//   Pos cur = s.start;
-//   for (int dir: {RIGHT, DOWN, LEFT, UP}) {
-//     REP(i,3) {
-//       Pos nex = cur.to(dir);
-//       if (outside(nex)) break;
-//       s.grid[cur.y][cur.x] = nex;
-//       s.goal = cur;
-//       if (!s.empty(nex)) break;
-//       cur = nex;
-//     }
-//   }
-//   s.score = s.calcScore();
-// }
-
-// void initState3(State &s) {
-//   int v = V;
-//   s.dice[0] = V;
-//   s.dice[1] = V-1;
-//   s.dice[2] = V;
-//   s.dice[3] = V-1;
-//   s.dice[4] = V-2;
-//   if (V > 4) s.dice[5] = V-3;
-//   else s.dice[5] = V-2;
-//   // REP(i,6) {
-//   //   // s.dice[i] = v;
-//   //   // --v;
-//   //   // if (v <= 0) v = V;
-//   //   s.dice[i] = V-i%3;
-//   // }
-//   s.start = Pos(N/2,0,0);
-//   Pos cur = s.start;
-//   for (int dir: {RIGHT, DOWN, LEFT, UP, RIGHT}) {
-//     REP(i,N) {
-//       Pos nex = cur.to(dir);
-//       if (outside(nex)) break;
-//       s.grid[cur.y][cur.x] = nex;
-//       s.goal = cur;
-//       if (!s.empty(nex)) break;
-//       cur = nex;
-//     }
-//   }
-//   s.score = s.calcScore();
-// }
 
 struct SASolver {
   double startTemp = 3;
@@ -818,19 +751,13 @@ struct SASolver {
     }
     cerr << "counter = " << counter << ", score = " << best.score << " " << best.calcScore() << endl;
     REP3(i,1,6) {
+      if (total[i] == 0) continue;
       cerr << i << ":" << 1.0*ac[i]/total[i] << "(" << ac[i] << "/" << total[i] << ")" << endl;
     }
   }
 };
 
-vector<vector<int>> dices_ = {
-  {V,V-1,V,V-2,V-1,max(2,V-3)},
-  {V,V-1,V,V-2,max(2,V-4),max(2,V-3)},
-  {V,V,V-1,V-1,V-2,V-2},
-};
-
 struct Solver {
-    int turn_ = 0;
     Solver() {
         reset();
     }
@@ -840,15 +767,6 @@ struct Solver {
     void solve() {
         State state; // 開始状態
         initState(state,{V,V-1,V,V-2,V-1,max(2,V-3)});
-        // REP(i,50) {
-        // state.update5();
-        // }
-        // initState3(state);
-        // show(state.grid);
-        // state.write();
-        // cerr << state.score << endl;
-        // return;
-
         SASolver s;
         s.solve(state);
         s.best.write();
@@ -857,7 +775,7 @@ struct Solver {
         cerr << "score=" << score << " " << score*B << endl;
     }
 
-    void readInput() { // loopから抜け出す時にtrue
+    void readInput() {
       cin >> N >> V >> B;
 
       REP(r,N) REP(c,N) {
