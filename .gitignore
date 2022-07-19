@@ -3,3 +3,4 @@ data/???.in
 data/????.in
 data/*.out
 data/*.err
+data/*.mout
