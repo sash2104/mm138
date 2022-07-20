@@ -184,10 +184,15 @@ static constexpr short BOTTOM = 1;
 int to_[30*30*32][4];
 int dist_[30*30][30*30];
 int dir_[30*30][30*30];
+int i3_2_[30*30*32];
 inline int y_(int id3) { return id3/(32*N); }
 inline int x_(int id3) { return (id3/32)%N; }
 inline int d_(int id3) { return id3%32; }
-inline int i2_(int id3) { return id3 >> 5; } // id3 -> id2
+inline int i2_(int id3) { 
+  return id3 >> 5;
+  // assert(i3_2_[id3] == (id3 >> 5));
+  // return i3_2_[id3];
+} // id3 -> id2
 
 struct Pos {
   short x = -1, y = -1, d = -1;
@@ -320,8 +325,7 @@ struct State {
       bp = Pos(bx,by);
       if (outside(bp)) continue;
       int bid = bp.id2();
-      // cerr << bp << Pos(grid[bid]) << gp << endl;
-      if (i2_(grid[bid]) == goalI2) {
+      if (grid[bid] != -1 && i2_(grid[bid]) == goalI2) {
         // cerr << bp << gp << endl;
         goal = grid[bid];
         break;
@@ -806,6 +810,7 @@ void initPos() {
       assert(y_(id3) == y);
       assert(x_(id3) == x);
       assert(d_(id3) == d);
+      i3_2_[id3] = (id3 >> 5);
       REP(dir,4) {
         Pos np = p.to(dir);
         if (outside(np)) continue;
