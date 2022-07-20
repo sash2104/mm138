@@ -487,12 +487,13 @@ struct State {
     btype = 1;
     int len = rng.nextInt(3,MAX_DEPTH-2);
     int id = rng.nextInt(N*N);
-    while(grid[id] == -1 || id == goalI2 || i2_(grid[id]) == goalI2) {
+    while(grid[id] == -1 || id == goalI2) {
       id = rng.nextInt(N*N);
     }
     bid = id;
     int cur = grid[id];
     bsrc = cur;
+    bgoal = goalI2;
     int target;
     int diff1 = clear(cur, &len, &target);
     // cerr << Pos(x,y) << "->" << Pos(x_(cur), y_(cur)) << "->" << Pos(x_(target), y_(target)) << endl;
@@ -501,11 +502,11 @@ struct State {
     btarget = target;
     // show(grid);
     // cerr << bsrc << target << endl;
-    bgoal = goalI2;
     int len2 = dfs(-1, bsrc, target, i2_(target), 0);
     if (len2 == -1) {
       return -INF;
     }
+    assert(i2_(grid[goalI2]) == i2_(start));
     // show(grid);
     int diff2 = calcDiffScore(bsrc, target);
     score += diff1+diff2;
@@ -553,10 +554,10 @@ struct State {
         // cerr << endl;
         return depth;
       }
-      // else if (i2_(cur) == i2_(start)) {
-      //   goalI2 = befI2;
-      //   return depth;
-      // }
+      else if (targetI2 == i2_(start) && i2_(cur) == i2_(start)) {
+        goalI2 = befI2;
+        return depth;
+      }
       return -1;
     }
     // targetにたどり着けない場合は枝刈り
@@ -666,9 +667,7 @@ struct State {
       int nex = grid[i2_(cur)];
       grid[i2_(cur)] = -1;
       assert(nex != -1);
-      if (nex == -1) break;
       if (i2_(nex) == i2_(btarget)) break;
-      if (i2_(nex) == i2_(start)) break;
       cur = nex;
     }
     cur = bsrc;
@@ -763,7 +762,7 @@ struct SASolver {
           ac[state.btype]++;
           if (best.score < state.score) {
             best = state;
-            cerr << "time = " << t << ", counter = " << counter << ", score = " << best.score << '\n';
+            // cerr << "time = " << t << ", counter = " << counter << ", score = " << best.score << '\n';
             // best.write();
           }
         }
