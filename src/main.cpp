@@ -384,7 +384,7 @@ struct State {
     btype = 2;
     int did = rng.nextInt(6);
     bv = dice[did];
-    int vmin = max(1, V-4);
+    int vmin = max(1, V-5);
     int v = rng.nextInt(vmin, V-1);
     if (v >= bv) v += 1;
     bscore = score;
@@ -527,12 +527,11 @@ struct State {
 
     assert(len > 0 && len2 > 0);
     // double sc = 1.0*diff1/len+1.0*diff2/len2;
-    double sc = diff1+diff2+(len-len2);
     // if (sc > 0 && len < 4) {
     //   D5(diff1, len, diff2, len2, sc);
     // }
     // cerr << (grid[goalI2] == start) << endl;
-    return sc;
+    return diff1+diff2+(len-len2)*0.5;
   }
   double update(double progress) { 
     int p = rng.nextInt(N*100);
