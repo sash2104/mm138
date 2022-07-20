@@ -519,12 +519,10 @@ struct State {
   }
   double update(double progress) { 
     int p = rng.nextInt(N*100);
-    int c = 100;
-    if (p <= c) return update4();
-    if (p <= 2*c) return update5();
-    if (p <= 2*c+5) return update6();
-    // if (p <= 2*c+5) return update2();
-    if (p <= 2*c+10) return update3();
+    if (p <= 5) return update6();
+    if (p <= 10) return update3();
+    if (p <= 110) return update4();
+    if (p <= 220) return update5();
     return update1();
   }
 
