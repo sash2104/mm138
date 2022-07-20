@@ -752,7 +752,7 @@ struct SASolver {
     int counter = 0;
     vector<int> total(6);
     vector<int> ac(6);
-    // best.write();
+    best.write();
     while ((t = timer.get()) < timer.LIMIT) // 焼きなまし終了時刻までループ
     {
       double T = startTemp + (endTemp - startTemp) * t / timer.LIMIT;
@@ -777,7 +777,7 @@ struct SASolver {
           if (best.score < state.score) {
             best = state;
             // cerr << "time = " << t << ", counter = " << counter << ", score = " << best.score << '\n';
-            // best.write();
+            best.write();
           }
         }
         else { state.revert(); }

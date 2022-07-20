@@ -244,34 +244,39 @@ class Application(tkinter.Frame):
         cur = self.output.get()
         for y in range(self.input.N):
             for x in range(self.input.N):
-                v = self.input.grid[y][x]
-                if v in cur.dice and (x,y) not in self.used:
-                    self.canvas.create_rectangle(x*size, y*size, (x+1)*size, (y+1)*size, fill = 'Blue')
                 self.canvas.create_text(x*size+size//2, y*size+size//2, text=str(self.input.grid[y][x]), font=("Helvetica", size//2))
 
     def draw_output(self):
         size = W//self.input.N
         cur = self.output.get()
         pmove = None
-        self.used = set()
         for i, move in enumerate(cur.moves):
             d = cur.getBottom(i)
             x = move.x
             y = move.y
             v = self.input.grid[y][x]
+            option = {}
             if abs(v) == d:
-                self.used.add((x,y))
                 if v > 0:
-                    color = 'Green'
+                    option["fill"] = '#44ff44' # Green
                 else:
-                    color = 'Red'
-                self.canvas.create_rectangle(x*size, y*size, (x+1)*size, (y+1)*size, fill = color)
+                    option["fill"] = '#ff4444' # Red
+            elif v in cur.dice:
+                option["fill"] = '#8888ff' # Blue
+            if i == 0 or i == len(cur.moves)-1:
+                option["outline"] = 'Red'
+                option["width"] = 5
+            if len(option) > 0:
+                self.canvas.create_rectangle(x*size, y*size, (x+1)*size, (y+1)*size, **option)
+            
             if pmove is not None:
                 self.canvas.create_line(
                     pmove.x*size+size//2,
                     pmove.y*size+size//2,
                     move.x*size+size//2,
                     move.y*size+size//2,
+                    width=5,
+                    fill='#888888'
                 )
             pmove = move
 
@@ -296,10 +301,11 @@ class Application(tkinter.Frame):
         for i in range(vmin, self.input.V+1):
             ac_str += f"{cur.count[i]}/{self.input.count[i]},"
         ac_str += f"]{self.input.V}"
-        self.infoCanvas.create_text(0, h, text=f"fill = {ac_str}", **option)
+
+        self.infoCanvas.create_text(0, h, text=f"score = {cur.score*self.input.B:.1f}({cur.score})", **option)
         h += 15
 
-        self.infoCanvas.create_text(0, h, text=f"score = {cur.score} ({cur.score*self.input.B:.1f})", **option)
+        self.infoCanvas.create_text(0, h, text=f"fill = {ac_str}", **option)
 
     def create_widgets(self):
         self.canvas = tk.Canvas(self, width = W, height = H)
@@ -338,7 +344,7 @@ class Application(tkinter.Frame):
         while self.output.oid < len(self.output.outputs)-1:
             self.output.next()
             self.draw()
-            time.sleep(0.1)
+            # time.sleep(0.01)
 
     def prev(self, event):
         self.output.prev()
