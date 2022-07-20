@@ -486,6 +486,16 @@ struct State {
   double update1() { 
     btype = 1;
     int len = rng.nextInt(3,MAX_DEPTH-2);
+    bgoal = goalI2;
+    bstart = start;
+    if (grid[goalI2] == start) {
+      int gid = rng.nextInt(N*N);
+      while(grid[gid] == -1) {
+        gid = rng.nextInt(N*N);
+      }
+      goalI2 = gid;
+      start = grid[goalI2];
+    }
     int id = rng.nextInt(N*N);
     while(grid[id] == -1 || id == goalI2) {
       id = rng.nextInt(N*N);
@@ -493,7 +503,6 @@ struct State {
     bid = id;
     int cur = grid[id];
     bsrc = cur;
-    bgoal = goalI2;
     int target;
     int diff1 = clear(cur, &len, &target);
     // cerr << Pos(x,y) << "->" << Pos(x_(cur), y_(cur)) << "->" << Pos(x_(target), y_(target)) << endl;
@@ -522,14 +531,17 @@ struct State {
     // if (sc > 0 && len < 4) {
     //   D5(diff1, len, diff2, len2, sc);
     // }
+    // cerr << (grid[goalI2] == start) << endl;
     return sc;
   }
   double update(double progress) { 
     int p = rng.nextInt(N*100);
     if (p <= 5) return update6();
     if (p <= 10) return update3();
-    if (p <= 110) return update4();
-    if (p <= 220) return update5();
+    if (grid[goalI2] != start) {
+      if (p <= 110) return update4();
+      if (p <= 220) return update5();
+    }
     return update1();
   }
 
@@ -679,6 +691,7 @@ struct State {
       cur = bpos[i];
     }
     goalI2 = bgoal;
+    start = bstart;
     score = bscore;
     assert(i2_(grid[goalI2]) == i2_(start));
     // show(grid);
@@ -739,6 +752,7 @@ struct SASolver {
     int counter = 0;
     vector<int> total(6);
     vector<int> ac(6);
+    // best.write();
     while ((t = timer.get()) < timer.LIMIT) // 焼きなまし終了時刻までループ
     {
       double T = startTemp + (endTemp - startTemp) * t / timer.LIMIT;
