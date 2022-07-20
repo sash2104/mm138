@@ -738,7 +738,7 @@ struct SASolver {
   double startTemp = 3;
   double endTemp = 0.001;
   // Timer timer = Timer(2.85);
-  Timer timer = Timer(9.75);
+  Timer timer = Timer(9.55);
   // Timer timer = Timer(29.55);
   State best;
   SASolver() { init(); }
