@@ -278,7 +278,7 @@ struct State {
   int btype;
   int bdid, bv;
   int bstart, bgoal, bgridgoal, bgridstart;
-  State(): dice(6), bpos(MAX_DEPTH+1) {
+  State(): dice(6), bpos(MAX_DEPTH+2) {
     REP(i,N*N) grid[i] = -1;
   }
 
@@ -460,8 +460,10 @@ struct State {
     int cur = src;
     REP(i,*len) {
       int nex = grid[i2_(cur)];
+      // cerr << Pos(cur) << Pos(nex) << endl;
       assert(nex != -1);
-      // cerr << Pos(cur) << Pos(nex) << Pos(start) << Pos(goal) << endl;
+      // cerr << Pos(cur) << Pos(nex) << i << " "<<*len <<endl;
+      bpos[i+1] = -1;
       bpos[i] = nex;
       *target = nex;
       int d = dice[dice_[d_(cur)][BOTTOM]];
@@ -470,7 +472,9 @@ struct State {
       // cerr << "[cl]" << Pos(cur) << Pos(nex) << endl;
       grid[i2_(cur)] = -1;
       // cerr << i << cur << nex << endl;
-      if (i2_(nex) == goalI2) {
+      if (i2_(nex) == i2_(start)) {
+        // cerr << Pos(cur) << Pos(*target) << Pos(start) << endl;
+        assert(i2_(*target) == i2_(start));
         *len = i+1;
         break;
       }
@@ -497,11 +501,13 @@ struct State {
     btarget = target;
     // show(grid);
     // cerr << bsrc << target << endl;
-    int len2 = dfs(bsrc, target, i2_(target), 0);
+    bgoal = goalI2;
+    int len2 = dfs(-1, bsrc, target, i2_(target), 0);
     if (len2 == -1) {
       return -INF;
     }
-    int diff2 = calcDiffScore(bsrc, btarget);
+    // show(grid);
+    int diff2 = calcDiffScore(bsrc, target);
     score += diff1+diff2;
 
     // show(grid);
@@ -530,9 +536,12 @@ struct State {
     return grid[i2_(p)] == -1;
   }
 
-  short dfs(int cur, int target, int targetI2, int depth) {
+  short dfs(int befI2, int cur, int target, int targetI2, int depth) {
     if (!empty(cur)) {
       if (cur == target) {
+        if (targetI2 == i2_(start)) {
+          goalI2 = befI2;
+        }
         // Pos fr = src;
         // while(true) {
         //   Pos nex = grid[fr.y][fr.x];
@@ -544,6 +553,10 @@ struct State {
         // cerr << endl;
         return depth;
       }
+      // else if (i2_(cur) == i2_(start)) {
+      //   goalI2 = befI2;
+      //   return depth;
+      // }
       return -1;
     }
     // targetにたどり着けない場合は枝刈り
@@ -555,7 +568,7 @@ struct State {
       if (nex == -1) continue; // outside
       // assert(grid[i2_(cur)] == -1);
       grid[i2_(cur)] = nex;
-      short ret = dfs(nex, target, targetI2, depth+1);
+      short ret = dfs(i2_(cur), nex, target, targetI2, depth+1);
       if (ret != -1) return ret;
       grid[i2_(cur)] = -1;
     }
@@ -652,17 +665,23 @@ struct State {
     while (true) {
       int nex = grid[i2_(cur)];
       grid[i2_(cur)] = -1;
+      assert(nex != -1);
       if (nex == -1) break;
-      if (nex == btarget) break;
+      if (i2_(nex) == i2_(btarget)) break;
+      if (i2_(nex) == i2_(start)) break;
       cur = nex;
     }
     cur = bsrc;
+    assert(bpos[blen] == -1);
     REP(i,blen) {
       // cerr << i << cur << bpos[i] << endl;
+      assert(bpos[i] != -1);
       grid[i2_(cur)] = bpos[i];
       cur = bpos[i];
     }
+    goalI2 = bgoal;
     score = bscore;
+    assert(i2_(grid[goalI2]) == i2_(start));
     // show(grid);
   }
 
@@ -744,7 +763,7 @@ struct SASolver {
           ac[state.btype]++;
           if (best.score < state.score) {
             best = state;
-            // cerr << "time = " << t << ", counter = " << counter << ", score = " << best.score << '\n';
+            cerr << "time = " << t << ", counter = " << counter << ", score = " << best.score << '\n';
             // best.write();
           }
         }
