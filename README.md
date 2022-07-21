@@ -10,9 +10,9 @@ Initial Solution
 - Dice faces are: `V, V-1, V, V-2, V-1, max(V-3,2)`
 
 Transition
-T1. Change a face value / swap face values of the dice (`0.1~1%`)
-T2. Shift start cell forward or backward by 1 (`1%`)
-T3. Remove part of the loop and reconnect it with randomlized DFS (`all the rest`)
+- T1. Change a face value / swap face values of the dice (`0.1~1%`)
+- T2. Shift start cell forward or backward by 1 (`1%`)
+- T3. Remove part of the loop and reconnect it with randomlized DFS (`all the rest`)
 
 ## Things that work
 - Change evaluation function from actual score
