@@ -16,13 +16,13 @@ Transition
 
 ## Things that work
 - Change evaluation function from actual score
- - T1: `actual_score + expect_score * 0.5` where `expect_score` is  `(num. of cells whose filled number equal v) * v` (`v` is a face value of the dice)
- - T3: `actual_score + (num. of unused cells) * 0.5`
+  - T1: `actual_score + expect_score * 0.5` where `expect_score` is  `(num. of cells whose filled number equal v) * v` (`v` is a face value of the dice)
+  - T3: `actual_score + (num. of unused cells) * 0.5`
 
 - Speed-up
- - Calculate the differential score
- - Precomputing (e.g., `)
- - As a result, the number of transisions of simmulated annealing is `~10M`
+  - Calculate the differential score
+  - Precomputing (e.g., `)
+  - As a result, the number of transisions of simmulated annealing is `~10M`
 
 - In T3, allow transisions only when `(x, y, dice_pattern)` of source/target cells are same before/after the change
   - `dice_pattern`: Diffferent dice placements are considered different patterns.  (24 patterns)
