@@ -29,7 +29,7 @@ Transition
   - Precomputing (e.g., transisions between dice placements)
   - As a result, the number of transisions of simmulated annealing is `~10M`
 
-## Example Results
+# Example Results
 ```
 #1: 55.4
 #2: 2003.5
@@ -43,6 +43,6 @@ Transition
 #10: 1498.3
 ```
 
-## link
+# Links
 - final submit: https://github.com/sash2104/mm138/blob/59b3af4a706b18f6ced50b0feefb2a6fef945796/src/main.cpp
 - replay: https://twitter.com/sash277/status/1549810050319159296
