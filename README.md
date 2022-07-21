@@ -44,5 +44,5 @@ Transition
 ```
 
 # Links
-- final submit: https://github.com/sash2104/mm138/blob/59b3af4a706b18f6ced50b0feefb2a6fef945796/src/main.cpp
-- replay: https://twitter.com/sash277/status/1549810050319159296
+- Final submission: https://github.com/sash2104/mm138/blob/59b3af4a706b18f6ced50b0feefb2a6fef945796/src/main.cpp
+- Replay: https://twitter.com/sash277/status/1549810050319159296
