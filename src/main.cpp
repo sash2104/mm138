@@ -244,7 +244,7 @@ bool outside(const Pos &p) {
 // using grid_t = vector<int>;
 using grid_t = int[900];
 
-static constexpr int MAX_DEPTH = 13;
+static constexpr int MAX_DEPTH = 16;
 vector<char> dir2c = {'A', 'v', '<', '>'};
 void show(const grid_t &grid) {
   REP(y,N) {
@@ -269,10 +269,11 @@ struct State {
   int start, goalI2;  // id2
   grid_t grid;
   int score = -INF;
+  int dfs_counter1 = 0;
   // backup
   vector<int> bpos;
   int bscore;
-  int blen;
+  int blen, blen2;
   int bsrc, btarget;
   int bid;
   int btype;
@@ -484,6 +485,7 @@ struct State {
   }
 
   double update1() { 
+    blen2 = -1;
     btype = 1;
     int len = rng.nextInt(3,MAX_DEPTH-2);
     bgoal = goalI2;
@@ -511,13 +513,18 @@ struct State {
     btarget = target;
     // show(grid);
     // cerr << bsrc << target << endl;
+    dfs_counter1 = 0;
     int len2 = dfs(-1, bsrc, target, i2_(target), 0);
+    blen2 = len2;
     if (len2 == -1) {
       return -INF;
     }
     assert(i2_(grid[goalI2]) == i2_(start));
     // show(grid);
     int diff2 = calcDiffScore(bsrc, target);
+    // if (diff1+diff2 != 0 || len != len2) {
+    //   D3(len, len2, dfs_counter1);
+    // }
     score += diff1+diff2;
 
     // show(grid);
@@ -550,6 +557,7 @@ struct State {
 
   short dfs(int befI2, int cur, int target, int targetI2, int depth) {
     if (!empty(cur)) {
+      ++dfs_counter1;
       if (cur == target) {
         if (targetI2 == i2_(start)) {
           goalI2 = befI2;
@@ -571,8 +579,13 @@ struct State {
       }
       return -1;
     }
+
+    if (dfs_counter1 > 300) return -1;
     // targetにたどり着けない場合は枝刈り
-    if (dist_[i2_(cur)][targetI2] > MAX_DEPTH-depth) return -1;
+    if (dist_[i2_(cur)][targetI2] > MAX_DEPTH-depth) {
+      ++dfs_counter1;
+      return -1;
+    }
 
     int oid = rng.nextInt(24);
     for (short dir: orders_[oid]) {
@@ -584,6 +597,7 @@ struct State {
       if (ret != -1) return ret;
       grid[i2_(cur)] = -1;
     }
+    ++dfs_counter1;
     return -1;
   }
 
@@ -674,7 +688,7 @@ struct State {
   void revert1() {
     // show(grid);
     int cur = bsrc;
-    while (true) {
+    REP(i,blen2) {
       int nex = grid[i2_(cur)];
       grid[i2_(cur)] = -1;
       assert(nex != -1);
@@ -738,7 +752,7 @@ struct SASolver {
   double endTemp = 0.001;
   // Timer timer = Timer(2.85);
   Timer timer = Timer(9.55);
-  // Timer timer = Timer(29.55);
+  // Timer timer = Timer(200);
   State best;
   SASolver() { init(); }
   SASolver(double st, double et): startTemp(st), endTemp(et) { init(); }
@@ -801,6 +815,7 @@ struct Solver {
     void solve() {
         State state; // 開始状態
         initState(state,{V,V-1,V,V-2,V-1,max(2,V-3)});
+        // initState(state,{0,0,0,0,0,0});
         SASolver s;
         s.solve(state);
         s.best.write();
