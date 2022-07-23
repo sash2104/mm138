@@ -2,7 +2,7 @@ https://www.topcoder.com/challenges/81d26476-fb3c-4e4e-9ffe-7ee17c0438ab?tab=det
 
 
 # Approach
-(2022/7/23: Corrected to make description accurate. See #2 for the difference.)
+(2022/7/23: Corrected to make description accurate. See https://github.com/sash2104/mm138/pull/2/files for the difference.)
 
 ## Overview
 I solved this problem using simulated annealing.
